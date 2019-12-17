@@ -24,33 +24,37 @@ echo Running tmate...
 tmate -S /tmp/tmate.sock new-session -d
 tmate -S /tmp/tmate.sock wait tmate-ready
 
-# Print connection info
-DISPLAY=1
-while [ $DISPLAY -le 3 ]; do
-  echo ________________________________________________________________________________
-  echo To connect to this session copy-n-paste the following into a terminal or browser:
-  tmate -S /tmp/tmate.sock display -p '#{tmate_ssh}'
-  tmate -S /tmp/tmate.sock display -p '#{tmate_web}'
-  [ ! -f /tmp/keepalive ] && echo -e "After connecting you can run 'touch /tmp/keepalive' to disable the 30m timeout"
-  DISPLAY=$(($DISPLAY+1))
-  sleep 30
-done
-
 if [[ ! -z "$SLACK_WEBHOOK_URL" ]]; then
   MSG=$(tmate -S /tmp/tmate.sock display -p '#{tmate_ssh}')
   curl -X POST -H 'Content-type: application/json' --data "{\"text\":\"\`$MSG\`\"}" $SLACK_WEBHOOK_URL
 fi
 
-# Wait for connection to close or timeout in 15 min
-timeout=$((30*60))
-while [ -S /tmp/tmate.sock ]; do
-  sleep 1
-  timeout=$(($timeout-1))
+echo ________________________________________________________________________________
+echo To connect to this session copy-n-paste the following into a terminal or browser:
 
+# Wait for connection to close or timeout
+timeout=$(( ${TIMEOUT_MIN:=30}*60 ))
+display_int=${DISP_INTERVAL_SEC:=30}
+timecounter=0
+
+while [ -S /tmp/tmate.sock ]; do
   if [ ! -f /tmp/keepalive ]; then
-    if (( timeout < 0 )); then
+    if (( timecounter > timeout )); then
       echo Waiting on tmate connection timed out!
-      sudo init 0
+      if [ "x$FAIL_QUIT" = "x1" -o "x$FAIL_QUIT" = "xtrue" ]; then
+        sudo init 0
+      else
+        exit 1
+      fi
     fi
   fi
+
+  if (( timecounter % display_int == 0 )); then
+    tmate -S /tmp/tmate.sock display -p 'SSH: #{tmate_ssh}'
+    tmate -S /tmp/tmate.sock display -p 'WEB: #{tmate_web}'
+    [ ! -f /tmp/keepalive ] && echo -e "After connecting you can run 'touch /tmp/keepalive' to disable the timeout"
+  fi
+
+  sleep 1
+  timecounter=$(($timecounter+1))
 done

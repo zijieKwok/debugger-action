@@ -41,10 +41,10 @@ while [ -S /tmp/tmate.sock ]; do
   if [ ! -f /tmp/keepalive ]; then
     if (( timecounter > timeout )); then
       echo Waiting on tmate connection timed out!
-      if [ "x$FAIL_QUIT" = "x1" -o "x$FAIL_QUIT" = "xtrue" ]; then
-        sudo init 0
-      else
+      if [ "x$TIMEOUT_FAIL" = "x1" -o "x$TIMEOUT_FAIL" = "xtrue" ]; then
         exit 1
+      else
+        exit 0
       fi
     fi
   fi

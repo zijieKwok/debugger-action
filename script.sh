@@ -5,6 +5,7 @@ set -e
 # For mount docker volume, do not directly use '/tmp' as the dir
 KEEPALIVE_DIR="/tmp/tmate"
 KEEPALIVE_FILE="${KEEPALIVE_DIR}/keepalive"
+TMATE_TERM=${TMATE_TERM:-screen-256color}
 
 if [[ ! -z "$SKIP_DEBUGGER" ]]; then
   echo "Skipping debugger because SKIP_DEBUGGER enviroment variable is set"
@@ -43,10 +44,10 @@ if [ ! -z "${TMATE_DOCKER_IMAGE}" ]; then
   FIRSTWIN_MESSAGE_CMD='printf "This window is now running in GitHub Actions runner.\nTo attach to your Docker image again, use \"attach_docker\" command\n"'
   SECWIN_MESSAGE_CMD='printf "The first window of tmate has already been attached to your Docker image.\nThis window is running in GitHub Actions runner.\nTo attach to your Docker image again, use \"attach_docker\" command\n"'
   echo "unalias attach_docker 2>/dev/null || true ; alias attach_docker='${DK_SHELL}'" >> ~/.bashrc
-  tmate -S /tmp/tmate.sock new-session -d "/bin/sh -c '${DOCKER_MESSAGE_CMD} ; ${DK_SHELL} ; ${FIRSTWIN_MESSAGE_CMD} ; /bin/bash -li'" \; set-option default-command "/bin/sh -c '${SECWIN_MESSAGE_CMD} ; /bin/bash -li'"
+  TERM="${TMATE_TERM}" tmate -S /tmp/tmate.sock new-session -d "/bin/sh -c '${DOCKER_MESSAGE_CMD} ; ${DK_SHELL} ; ${FIRSTWIN_MESSAGE_CMD} ; /bin/bash -li'" \; set-option default-command "/bin/sh -c '${SECWIN_MESSAGE_CMD} ; /bin/bash -li'" \; set-option default-terminal "${TMATE_TERM}"
 else
   echo "unalias attach_docker 2>/dev/null || true" >> ~/.bashrc
-  tmate -S /tmp/tmate.sock new-session -d
+  TERM="${TMATE_TERM}" tmate -S /tmp/tmate.sock new-session -d \; set-option default-terminal "${TMATE_TERM}"
 fi
 
 tmate -S /tmp/tmate.sock wait tmate-ready

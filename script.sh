@@ -70,7 +70,7 @@ while [ -S /tmp/tmate.sock ]; do
       echo Waiting on tmate connection timed out!
       if [ ! -z "${container_id}" ]; then
         echo "Current docker container will be saved to your image: ${TMATE_DOCKER_IMAGE_EXP}"
-        docker stop "${container_id}"
+        docker stop "${container_id}" > /dev/null
         docker commit --message "Commit from debugger-action" "${container_id}" "${TMATE_DOCKER_IMAGE_EXP}"
         docker rm "${container_id}"
       fi
@@ -96,7 +96,7 @@ done
 
 if [ ! -z "${container_id}" ]; then
   echo "Current docker container will be saved to your image: ${TMATE_DOCKER_IMAGE_EXP}"
-  docker stop "${container_id}"
+  docker stop "${container_id}" > /dev/null
   docker commit --message "Commit from debugger-action" "${container_id}" "${TMATE_DOCKER_IMAGE_EXP}"
   docker rm "${container_id}"
 fi

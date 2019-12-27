@@ -35,7 +35,7 @@ if [ ! -z "${TMATE_DOCKER_IMAGE}" ]; then
   fi
   echo Creating docker container for running tmate
   container_id=$(docker create -it -v "${KEEPALIVE_DIR}:${KEEPALIVE_DIR}" "${TMATE_DOCKER_IMAGE}")
-  docker start -i "${container_id}"
+  docker start "${container_id}"
   docker exec -it "${container_id}" rm "${KEEPALIVE_FILE}" || true
   tmate -S /tmp/tmate.sock new-session -d docker exec -it "${container_id}" /bin/bash -il
 else

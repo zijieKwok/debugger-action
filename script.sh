@@ -26,8 +26,9 @@ fi
 # Run deamonized tmate
 echo Running tmate...
 
-mkdir "${KEEPALIVE_DIR}" || true
-rm "${KEEPALIVE_FILE}" || true
+sudo mkdir "${KEEPALIVE_DIR}" || true
+sudo chmod 777 "${KEEPALIVE_DIR}"
+sudo rm "${KEEPALIVE_FILE}" || true
 container_id=''
 if [ ! -z "${TMATE_DOCKER_IMAGE}" ]; then
   if [ -z "${TMATE_DOCKER_IMAGE_EXP}" ]; then
@@ -36,9 +37,13 @@ if [ ! -z "${TMATE_DOCKER_IMAGE}" ]; then
   echo Creating docker container for running tmate
   container_id=$(docker create -it -v "${KEEPALIVE_DIR}:${KEEPALIVE_DIR}" "${TMATE_DOCKER_IMAGE}")
   docker start "${container_id}"
-  docker exec -it "${container_id}" rm "${KEEPALIVE_FILE}" || true
-  tmate -S /tmp/tmate.sock new-session -d docker exec -it "${container_id}" /bin/bash -il
+  docker exec -it -u root "${container_id}" rm "${KEEPALIVE_FILE}" || true
+  DK_SHELL="docker exec -it ${container_id} /bin/bash -il"
+  MESSAGE_CMD="printf 'The first window of tmate has already been attached to your docker image.\nThis window is running in GitHub Actions runner.\nTo attach to your docker image again, use \'attach_docker\' command\n'"
+  echo "unalias attach_docker 2>/dev/null || true ; alias attach_docker='${DK_SHELL}'" >> ~/.bashrc
+  tmate -S /tmp/tmate.sock new-session -d ${DK_SHELL} \; set-option default-command "${MESSAGE_CMD} ; /bin/bash -li"
 else
+  echo "unalias attach_docker 2>/dev/null || true" >> ~/.bashrc
   tmate -S /tmp/tmate.sock new-session -d
 fi
 
@@ -67,7 +72,9 @@ while [ -S /tmp/tmate.sock ]; do
         echo "Current docker container will be saved to your image: ${TMATE_DOCKER_IMAGE_EXP}"
         docker stop "${container_id}"
         docker commit --message "Commit from debugger-action" "${container_id}" "${TMATE_DOCKER_IMAGE_EXP}"
+        docker rm "${container_id}"
       fi
+      sed -i '/alias attach_docker/d' ~/.bashrc || true
 
       if [ "x$TIMEOUT_FAIL" = "x1" -o "x$TIMEOUT_FAIL" = "xtrue" ]; then
         exit 1
@@ -91,4 +98,6 @@ if [ ! -z "${container_id}" ]; then
   echo "Current docker container will be saved to your image: ${TMATE_DOCKER_IMAGE_EXP}"
   docker stop "${container_id}"
   docker commit --message "Commit from debugger-action" "${container_id}" "${TMATE_DOCKER_IMAGE_EXP}"
+  docker rm "${container_id}"
 fi
+sed -i '/alias attach_docker/d' ~/.bashrc || true

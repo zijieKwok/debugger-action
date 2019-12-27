@@ -7,7 +7,7 @@ Interactive debugger for GitHub Actions
 ```
 steps:
 - name: Setup Debug Session
-  uses: P3TERX/debugger-action@master
+  uses: tete1030/debugger-action@my
 ```
 
 In the log for the action you will see:
@@ -19,15 +19,23 @@ ssh Y26QeagDtsPXp2mT6me5cnMRd@nyc1.tmate.io
 
 https://tmate.io/t/Y26QeagDtsPXp2mT6me5cnMRd
 ```
-> TIPS: This message is displayed 3 times, every 30 seconds.
+> TIPS: This message is displayed every 30 seconds for 30 minutes. (You can customize by setting TIMEOUT_MIN and DISP_INTERVAL_SEC env)
 
 Simply follow the instructions and copy the ssh command into your terminal to create an ssh connection the running instance. The session will close immedeatly after closing the ssh connection to the running instance.
 
-There is a global timeout after 30 minutes. This will close any open ssh sessions. To prevent the session from being terminated run:
+There is a global timeout after 30 minutes (if you didn't specify other value). This will close any open ssh sessions. To prevent the session from being terminated run:
 
 ```
-touch /tmp/keepalive
+touch /tmp/tmate/keepalive
 ```
+
+## Options
+
+- `TIMEOUT_MIN`: timeout in minutes
+- `DISP_INTERVAL_SEC`: display interval in seconds
+- `SLACK_WEBHOOK_URL`: Slack Webhook URL for sending message to your slack
+- `TMATE_DOCKER_IMAGE`: if you want the debugger to be used in docker image, specify the image's name
+- `TMATE_DOCKER_IMAGE_EXP`: specify the image name for saving the changes during docker image debugging
 
 ## Acknowledgments
 

@@ -3,9 +3,22 @@
 set -e
 
 # For mount docker volume, do not directly use '/tmp' as the dir
-KEEPALIVE_DIR="/tmp/tmate"
-KEEPALIVE_FILE="${KEEPALIVE_DIR}/keepalive"
 TMATE_TERM=${TMATE_TERM:-screen-256color}
+TIMESTAMP_MILLISEC="$(date +%s%3N)"
+TMATE_SOCK_FILE="/tmp/tmate-${TIMESTAMP_MILLISEC}.sock"
+KEEPALIVE_DIR="/tmp/tmate-${TIMESTAMP_MILLISEC}"
+KEEPALIVE_FILE="${KEEPALIVE_DIR}/keepalive"
+
+cleanup() {
+  if [ ! -z "${container_id}" ]; then
+    echo "Current docker container will be saved to your image: ${TMATE_DOCKER_IMAGE_EXP}"
+    docker stop "${container_id}" > /dev/null
+    docker commit --message "Commit from debugger-action" "${container_id}" "${TMATE_DOCKER_IMAGE_EXP}"
+    docker rm "${container_id}"
+  fi
+  sed -i '/alias attach_docker/d' ~/.bashrc || true
+  rm -rf "${KEEPALIVE_DIR}"
+}
 
 if [[ ! -z "$SKIP_DEBUGGER" ]]; then
   echo "Skipping debugger because SKIP_DEBUGGER enviroment variable is set"
@@ -44,15 +57,15 @@ if [ ! -z "${TMATE_DOCKER_IMAGE}" ]; then
   FIRSTWIN_MESSAGE_CMD='printf "This window is now running in GitHub Actions runner.\nTo attach to your Docker image again, use \"attach_docker\" command\n"'
   SECWIN_MESSAGE_CMD='printf "The first window of tmate has already been attached to your Docker image.\nThis window is running in GitHub Actions runner.\nTo attach to your Docker image again, use \"attach_docker\" command\n"'
   echo "unalias attach_docker 2>/dev/null || true ; alias attach_docker='${DK_SHELL}'" >> ~/.bashrc
-  TERM="${TMATE_TERM}" tmate -S /tmp/tmate.sock new-session -d "/bin/sh -c '${DOCKER_MESSAGE_CMD} ; ${DK_SHELL} ; ${FIRSTWIN_MESSAGE_CMD} ; /bin/bash -li'" \; set-option default-command "/bin/sh -c '${SECWIN_MESSAGE_CMD} ; /bin/bash -li'" \; set-option default-terminal "${TMATE_TERM}"
+  TERM="${TMATE_TERM}" tmate -S ${TMATE_SOCK_FILE} new-session -d "/bin/sh -c '${DOCKER_MESSAGE_CMD} ; ${DK_SHELL} ; ${FIRSTWIN_MESSAGE_CMD} ; /bin/bash -li'" \; set-option default-command "/bin/sh -c '${SECWIN_MESSAGE_CMD} ; /bin/bash -li'" \; set-option default-terminal "${TMATE_TERM}"
 else
   echo "unalias attach_docker 2>/dev/null || true" >> ~/.bashrc
-  TERM="${TMATE_TERM}" tmate -S /tmp/tmate.sock new-session -d \; set-option default-terminal "${TMATE_TERM}"
+  TERM="${TMATE_TERM}" tmate -S ${TMATE_SOCK_FILE} new-session -d \; set-option default-terminal "${TMATE_TERM}"
 fi
 
-tmate -S /tmp/tmate.sock wait tmate-ready
-SSH_LINE="$(tmate -S /tmp/tmate.sock display -p 'SSH: #{tmate_ssh}')"
-WEB_LINE="$(tmate -S /tmp/tmate.sock display -p 'WEB: #{tmate_web}')"
+tmate -S ${TMATE_SOCK_FILE} wait tmate-ready
+SSH_LINE="$(tmate -S ${TMATE_SOCK_FILE} display -p 'SSH: #{tmate_ssh}')"
+WEB_LINE="$(tmate -S ${TMATE_SOCK_FILE} display -p 'WEB: #{tmate_web}')"
 
 if [[ ! -z "$SLACK_WEBHOOK_URL" ]]; then
   MSG="${SSH_LINE}\n${WEB_LINE}"
@@ -67,17 +80,11 @@ timeout=$(( ${TIMEOUT_MIN:=30}*60 ))
 display_int=${DISP_INTERVAL_SEC:=30}
 timecounter=0
 
-while [ -S /tmp/tmate.sock ]; do
+while [ -S ${TMATE_SOCK_FILE} ]; do
   if [ ! -f "${KEEPALIVE_FILE}" ]; then
     if (( timecounter > timeout )); then
       echo Waiting on tmate connection timed out!
-      if [ ! -z "${container_id}" ]; then
-        echo "Current docker container will be saved to your image: ${TMATE_DOCKER_IMAGE_EXP}"
-        docker stop "${container_id}" > /dev/null
-        docker commit --message "Commit from debugger-action" "${container_id}" "${TMATE_DOCKER_IMAGE_EXP}"
-        docker rm "${container_id}"
-      fi
-      sed -i '/alias attach_docker/d' ~/.bashrc || true
+      cleanup
 
       if [ "x$TIMEOUT_FAIL" = "x1" -o "x$TIMEOUT_FAIL" = "xtrue" ]; then
         exit 1
@@ -97,10 +104,4 @@ while [ -S /tmp/tmate.sock ]; do
   timecounter=$(($timecounter+1))
 done
 
-if [ ! -z "${container_id}" ]; then
-  echo "Current docker container will be saved to your image: ${TMATE_DOCKER_IMAGE_EXP}"
-  docker stop "${container_id}" > /dev/null
-  docker commit --message "Commit from debugger-action" "${container_id}" "${TMATE_DOCKER_IMAGE_EXP}"
-  docker rm "${container_id}"
-fi
-sed -i '/alias attach_docker/d' ~/.bashrc || true
+cleanup

@@ -1,6 +1,7 @@
 #!/bin/bash
 
-set -e
+set -eo pipefail
+set -x
 
 # For mount docker volume, do not directly use '/tmp' as the dir
 TMATE_TERM=${TMATE_TERM:-screen-256color}

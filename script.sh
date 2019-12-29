@@ -19,7 +19,7 @@ cleanup() {
     docker commit --message "Commit from debugger-action" "${container_id}" "${TMATE_DOCKER_IMAGE_EXP}"
     docker rm "${container_id}" > /dev/null
   fi
-  tmate -S ${TMATE_SOCK_FILE} kill-server
+  tmate -S ${TMATE_SOCK_FILE} kill-session -a
   sed -i '/alias attach_docker/d' ~/.bashrc || true
   rm -rf "${KEEPALIVE_DIR}"
   rm -f "${TMATE_SOCK_FILE}"

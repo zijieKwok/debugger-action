@@ -26,7 +26,7 @@ Simply follow the instructions and copy the ssh command into your terminal to cr
 There is a global timeout after 30 minutes (if you didn't specify other value). This will close any open ssh sessions. To prevent the session from being terminated run:
 
 ```
-touch /tmp/tmate/keepalive
+touch /tmp/tmate-*/keepalive
 ```
 
 ## Options

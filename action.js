@@ -7,9 +7,9 @@ function run() {
 
     console.log(script);
     var child = require('child_process').execFile(script);
-    child.stderr.on('data', (data) => {
-      console.warn(data.toString());
-    });
+    // child.stderr.on('data', (data) => {
+    //   console.warn(data.toString());
+    // });
     child.stdout.on('data', (data) => {
       console.log(data.toString());
     });

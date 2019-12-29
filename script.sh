@@ -22,8 +22,8 @@ cleanup() {
   fi
   tmate kill-session -t ${TMATE_SESSION_NAME}
   sed -i '/alias attach_docker/d' ~/.bashrc || true
-  sudo rm -rf "${KEEPALIVE_DIR}"
-  sudo rm -f "${TMATE_SOCK_FILE}"
+  rm -rf "${KEEPALIVE_DIR}"
+  rm -f "${TMATE_SOCK_FILE}"
 }
 
 if [[ ! -z "$SKIP_DEBUGGER" ]]; then
@@ -46,9 +46,9 @@ fi
 # Run deamonized tmate
 echo Running tmate...
 
-sudo mkdir "${KEEPALIVE_DIR}" || true
-sudo chmod 777 "${KEEPALIVE_DIR}"
-sudo rm "${KEEPALIVE_FILE}" || true
+mkdir "${KEEPALIVE_DIR}" || true
+chmod 777 "${KEEPALIVE_DIR}"
+rm "${KEEPALIVE_FILE}" || true
 container_id=''
 if [ ! -z "${TMATE_DOCKER_IMAGE}" ]; then
   if [ -z "${TMATE_DOCKER_IMAGE_EXP}" ]; then

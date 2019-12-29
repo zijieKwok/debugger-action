@@ -74,7 +74,7 @@ timeout=$(( ${TIMEOUT_MIN:=30}*60 ))
 
 SSH_LINE="$(tmate -S ${TMATE_SOCK_FILE} display -p 'SSH: #{tmate_ssh}')"
 WEB_LINE="$(tmate -S ${TMATE_SOCK_FILE} display -p 'WEB: #{tmate_web}')"
-KEEPALIVE_MESSAGE="After connecting you should run \`touch ${KEEPALIVE_FILE}\` to disable the timeout. Or the session will be **KILLED** in ${timeout} seconds."
+KEEPALIVE_MESSAGE="After connecting you should run \`touch ${KEEPALIVE_FILE}\` to disable the timeout. Or the session will be *KILLED* in ${timeout} seconds. To skip this step, simply connect the ssh and exit."
 
 if [[ ! -z "$SLACK_WEBHOOK_URL" ]]; then
   MSG="${SSH_LINE}\n${WEB_LINE}"
@@ -105,7 +105,7 @@ while [ -S ${TMATE_SOCK_FILE} ]; do
   if (( timecounter % display_int == 0 )); then
     echo "${SSH_LINE}"
     echo "${WEB_LINE}"
-    [ ! -f "${KEEPALIVE_FILE}" ] && printf "After connecting you should run \`touch ${KEEPALIVE_FILE}\` to disable the timeout.\nOr the session will be KILLED in $(( $timeout-$timecounter )) seconds\n"
+    [ ! -f "${KEEPALIVE_FILE}" ] && printf "After connecting you should run \`touch ${KEEPALIVE_FILE}\` to disable the timeout.\nOr the session will be KILLED in $(( $timeout-$timecounter )) seconds\nTo skip this step, simply connect the ssh and exit.\n"
   fi
 
   sleep 1

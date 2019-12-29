@@ -1,7 +1,6 @@
 #!/bin/bash
 
 set -eo pipefail
-set -x
 
 # For mount docker volume, do not directly use '/tmp' as the dir
 TMATE_TERM=${TMATE_TERM:-screen-256color}
@@ -20,7 +19,7 @@ cleanup() {
     docker commit --message "Commit from debugger-action" "${container_id}" "${TMATE_DOCKER_IMAGE_EXP}"
     docker rm "${container_id}" > /dev/null
   fi
-  tmate kill-session -t ${TMATE_SESSION_NAME}
+  tmate -S ${TMATE_SOCK_FILE} kill-server
   sed -i '/alias attach_docker/d' ~/.bashrc || true
   rm -rf "${KEEPALIVE_DIR}"
   rm -f "${TMATE_SOCK_FILE}"

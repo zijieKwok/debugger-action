@@ -58,14 +58,15 @@ if [ ! -z "${TMATE_DOCKER_IMAGE}" ]; then
   docker start "${container_id}"
   docker exec -it -u root "${container_id}" rm "${KEEPALIVE_FILE}" || true
   DK_SHELL="docker exec -it ${container_id} /bin/bash -il"
-  DOCKER_MESSAGE_CMD='printf "This window is running in Docker image.\nTo attach to Github Actions runner, exit current shell\nor create a new tmate window by \"Ctrl-b, c\"\n(shortcut same to tmux, only available when connecting through ssh)\n"'
-  FIRSTWIN_MESSAGE_CMD='printf "This window is now running in GitHub Actions runner.\nTo attach to your Docker image again, use \"attach_docker\" command\n"'
-  SECWIN_MESSAGE_CMD='printf "The first window of tmate has already been attached to your Docker image.\nThis window is running in GitHub Actions runner.\nTo attach to your Docker image again, use \"attach_docker\" command\n"'
+  DOCKER_MESSAGE_CMD='printf "This window is running in Docker image.\nTo attach to Github Actions runner, exit current shell\nor create a new tmate window by \"Ctrl-b, c\"\n(This shortcut is only available when connecting through ssh)\nAfter connecting you should run \`touch '${KEEPALIVE_FILE}'\` to disable the timeout.\nOr the session will be KILLED in '${timeout}' seconds\n\n"'
+  FIRSTWIN_MESSAGE_CMD='printf "This window is now running in GitHub Actions runner.\nTo attach to your Docker image again, use \"attach_docker\" command\n\n"'
+  SECWIN_MESSAGE_CMD='printf "The first window of tmate has already been attached to your Docker image.\nThis window is running in GitHub Actions runner.\nTo attach to your Docker image again, use \"attach_docker\" command\n\n"'
   echo "unalias attach_docker 2>/dev/null || true ; alias attach_docker='${DK_SHELL}'" >> ~/.bashrc
-  TERM="${TMATE_TERM}" tmate -S ${TMATE_SOCK_FILE} new-session -s ${TMATE_SESSION_NAME} -d "/bin/sh -c '${DOCKER_MESSAGE_CMD} ; ${DK_SHELL} ; ${FIRSTWIN_MESSAGE_CMD} ; /bin/bash -li'" \; set-option default-command "/bin/sh -c '${SECWIN_MESSAGE_CMD} ; /bin/bash -li'" \; set-option default-terminal "${TMATE_TERM}"
+  TERM="${TMATE_TERM}" tmate -S ${TMATE_SOCK_FILE} new-session -s ${TMATE_SESSION_NAME} -d "/bin/bash --noprofile --norc -c '${DOCKER_MESSAGE_CMD} ; ${DK_SHELL} ; ${FIRSTWIN_MESSAGE_CMD} ; /bin/bash -li'" \; set-option default-command "/bin/bash --noprofile --norc -c '${SECWIN_MESSAGE_CMD} ; /bin/bash -li'" \; set-option default-terminal "${TMATE_TERM}"
 else
+  MESSAGE_CMD='printf "After connecting you should run \`touch '${KEEPALIVE_FILE}'\` to disable the timeout.\nOr the session will be KILLED in '${timeout}' seconds\n\n"'
   echo "unalias attach_docker 2>/dev/null || true" >> ~/.bashrc
-  TERM="${TMATE_TERM}" tmate -S ${TMATE_SOCK_FILE} new-session -s ${TMATE_SESSION_NAME} -d \; set-option default-terminal "${TMATE_TERM}"
+  TERM="${TMATE_TERM}" tmate -S ${TMATE_SOCK_FILE} new-session -s ${TMATE_SESSION_NAME} -d "/bin/bash --noprofile --norc -c '${MESSAGE_CMD} ; /bin/bash -li'" \; set-option default-terminal "${TMATE_TERM}"
 fi
 
 tmate -S ${TMATE_SOCK_FILE} wait tmate-ready

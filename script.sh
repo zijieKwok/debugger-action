@@ -30,13 +30,20 @@ if [[ ! -z "$SKIP_DEBUGGER" ]]; then
   exit
 fi
 
+if [ -z "${TMATE_ENCRYPT_PASSWORD}" -a -z "${SLACK_WEBHOOK_URL}" ]; then
+  echo "::error::You should either set TMATE_ENCRYPT_PASSWORD or SLACK_WEBHOOK_URL for safety of your secret information"
+  exit 1
+fi
+
 # Install tmate on macOS or Ubuntu
-echo Setting up tmate...
+echo Setting up tmate and openssl...
 if [ -x "$(command -v brew)" ]; then
   brew install tmate > /tmp/brew.log
+  [ -z "${TMATE_ENCRYPT_PASSWORD}" ] || ( command -v openssl > /dev/null 2>&1 || brew install openssl )
 fi
 if [ -x "$(command -v apt-get)" ]; then
   curl -fsSL git.io/tmate.sh | bash
+  [ -z "${TMATE_ENCRYPT_PASSWORD}" ] || ( command -v openssl > /dev/null 2>&1 || sudo apt-get -q -yy install openssl )
 fi
 
 # Generate ssh key if needed
@@ -73,12 +80,12 @@ tmate -S ${TMATE_SOCK_FILE} wait tmate-ready
 
 timeout=$(( ${TIMEOUT_MIN:=30}*60 ))
 
-SSH_LINE="$(tmate -S ${TMATE_SOCK_FILE} display -p 'SSH: #{tmate_ssh}')"
-WEB_LINE="$(tmate -S ${TMATE_SOCK_FILE} display -p 'WEB: #{tmate_web}')"
+SSH_LINE="$(tmate -S ${TMATE_SOCK_FILE} display -p '#{tmate_ssh}')"
+WEB_LINE="$(tmate -S ${TMATE_SOCK_FILE} display -p '#{tmate_web}')"
 KEEPALIVE_MESSAGE="After connecting you should run \`touch ${KEEPALIVE_FILE}\` to disable the timeout. Or the session will be *KILLED* in ${timeout} seconds. To skip this step, simply connect the ssh and exit."
 
 if [[ ! -z "$SLACK_WEBHOOK_URL" ]]; then
-  MSG="${SSH_LINE}\n${WEB_LINE}"
+  MSG="SSH: ${SSH_LINE}\nWEB: ${WEB_LINE}"
   curl -X POST -H 'Content-type: application/json' --data "{\"text\":\"\`\`\`\n$MSG\n\`\`\`\n${KEEPALIVE_MESSAGE}\"}" "$SLACK_WEBHOOK_URL"
 fi
 
@@ -104,8 +111,15 @@ while [ -S ${TMATE_SOCK_FILE} ]; do
   fi
 
   if (( timecounter % display_int == 0 )); then
-    echo "${SSH_LINE}"
-    echo "${WEB_LINE}"
+    if [ ! -z "${TMATE_ENCRYPT_PASSWORD}" ]; then
+      echo The following are encrypted tmate SSH and URL
+      echo 'To decrypt, run \`echo "${ENCRYPTED_STRING}" | openssl base64 -d | openssl enc -d -aes-256-cbc -k "${TMATE_ENCRYPT_PASSWORD}"\`'
+      echo SSH: $(echo -n "${SSH_LINE}" | openssl enc -e -aes-256-cbc -a -k "${TMATE_ENCRYPT_PASSWORD}")
+      echo Web: $(echo -n "${WEB_LINE}" | openssl enc -e -aes-256-cbc -a -k "${TMATE_ENCRYPT_PASSWORD}")
+    else
+      echo You have not configured TMATE_ENCRYPT_PASSWORD for encrypting sensitive information
+      echo The tmate SSH and URL are only sent to your Slack (you have set SLACK_WEBHOOK_URL).
+    fi
     [ ! -f "${KEEPALIVE_FILE}" ] && printf "After connecting you should run \`touch ${KEEPALIVE_FILE}\` to disable the timeout.\nOr the session will be KILLED in $(( $timeout-$timecounter )) seconds\nTo skip this step, simply connect the ssh and exit.\n"
   fi
 

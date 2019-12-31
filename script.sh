@@ -31,7 +31,7 @@ if [[ ! -z "$SKIP_DEBUGGER" ]]; then
 fi
 
 if [ -z "${TMATE_ENCRYPT_PASSWORD}" -a -z "${SLACK_WEBHOOK_URL}" ]; then
-  echo "::error::You should either set TMATE_ENCRYPT_PASSWORD or SLACK_WEBHOOK_URL for safety of your secret information"
+  echo "::error::You should set either TMATE_ENCRYPT_PASSWORD or SLACK_WEBHOOK_URL enviroment variables for safety of your secret information, refer to https://github.com/tete1030/debugger-action/blob/my/README.md"
   exit 1
 fi
 
@@ -124,6 +124,7 @@ while [ -S ${TMATE_SOCK_FILE} ]; do
     else
       echo "You have not configured TMATE_ENCRYPT_PASSWORD for encrypting sensitive information"
       echo "The tmate SSH and URL are only sent to your Slack through SLACK_WEBHOOK_URL"
+      echo "For detail, refer to https://github.com/tete1030/debugger-action/blob/my/README.md"
       printf "\n"
     fi
     [ ! -f "${KEEPALIVE_FILE}" ] && printf "After connecting you should run '\e[32mtouch ${KEEPALIVE_FILE}\e[0m' to disable the timeout.\nOr the session will be \e[31mKILLED\e[0m in $(( $timeout-$timecounter )) seconds\nTo skip this step, simply connect the ssh and exit.\n"

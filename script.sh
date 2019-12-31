@@ -114,8 +114,8 @@ while [ -S ${TMATE_SOCK_FILE} ]; do
     if [ ! -z "${TMATE_ENCRYPT_PASSWORD}" ]; then
       echo The following are encrypted tmate SSH and URL
       echo 'To decrypt, run \`echo "${ENCRYPTED_STRING}" | openssl base64 -d | openssl enc -d -aes-256-cbc -k "${TMATE_ENCRYPT_PASSWORD}"\`'
-      # echo SSH: $(echo -n "${SSH_LINE}" | openssl enc -e -aes-256-cbc -a -k "${TMATE_ENCRYPT_PASSWORD}")
-      # echo Web: $(echo -n "${WEB_LINE}" | openssl enc -e -aes-256-cbc -a -k "${TMATE_ENCRYPT_PASSWORD}")
+      echo SSH: $(echo -n "${SSH_LINE}" | openssl enc -e -aes-256-cbc -a -k "${TMATE_ENCRYPT_PASSWORD}")
+      echo Web: $(echo -n "${WEB_LINE}" | openssl enc -e -aes-256-cbc -a -k "${TMATE_ENCRYPT_PASSWORD}")
     else
       echo "You have not configured TMATE_ENCRYPT_PASSWORD for encrypting sensitive information"
       echo "The tmate SSH and URL are only sent to your Slack (you have set SLACK_WEBHOOK_URL)."

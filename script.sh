@@ -117,8 +117,8 @@ while [ -S ${TMATE_SOCK_FILE} ]; do
       # echo SSH: $(echo -n "${SSH_LINE}" | openssl enc -e -aes-256-cbc -a -k "${TMATE_ENCRYPT_PASSWORD}")
       # echo Web: $(echo -n "${WEB_LINE}" | openssl enc -e -aes-256-cbc -a -k "${TMATE_ENCRYPT_PASSWORD}")
     else
-      echo You have not configured TMATE_ENCRYPT_PASSWORD for encrypting sensitive information
-      echo The tmate SSH and URL are only sent to your Slack (you have set SLACK_WEBHOOK_URL).
+      echo "You have not configured TMATE_ENCRYPT_PASSWORD for encrypting sensitive information"
+      echo "The tmate SSH and URL are only sent to your Slack (you have set SLACK_WEBHOOK_URL)."
     fi
     [ ! -f "${KEEPALIVE_FILE}" ] && printf "After connecting you should run \`touch ${KEEPALIVE_FILE}\` to disable the timeout.\nOr the session will be KILLED in $(( $timeout-$timecounter )) seconds\nTo skip this step, simply connect the ssh and exit.\n"
   fi

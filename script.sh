@@ -60,7 +60,7 @@ if [ ! -z "${TMATE_DOCKER_IMAGE}" ]; then
   if [ -z "${TMATE_DOCKER_IMAGE_EXP}" ]; then
     TMATE_DOCKER_IMAGE_EXP="${TMATE_DOCKER_IMAGE}"
   fi
-  echo Creating docker container for running tmate
+  echo "Creating docker container for running tmate"
   container_id=$(docker create -it -v "${KEEPALIVE_DIR}:${KEEPALIVE_DIR}" "${TMATE_DOCKER_IMAGE}")
   docker start "${container_id}"
   docker exec -it -u root "${container_id}" rm "${KEEPALIVE_FILE}" || true
@@ -86,11 +86,14 @@ KEEPALIVE_MESSAGE="After connecting you should run \`touch ${KEEPALIVE_FILE}\` t
 
 if [[ ! -z "$SLACK_WEBHOOK_URL" ]]; then
   MSG="SSH: ${SSH_LINE}\nWEB: ${WEB_LINE}"
+  echo -n "Sending information to Slack......"
   curl -X POST -H 'Content-type: application/json' --data "{\"text\":\"\`\`\`\n$MSG\n\`\`\`\n${KEEPALIVE_MESSAGE}\"}" "$SLACK_WEBHOOK_URL"
+  printf "\n"
 fi
 
 echo ______________________________________________________________________________________________
 echo To connect to this session copy-n-paste the following into a terminal or browser:
+printf "\n"
 
 # Wait for connection to close or timeout
 display_int=${DISP_INTERVAL_SEC:=30}
@@ -113,10 +116,10 @@ while [ -S ${TMATE_SOCK_FILE} ]; do
   if (( timecounter % display_int == 0 )); then
     if [ ! -z "${TMATE_ENCRYPT_PASSWORD}" ]; then
       echo "The following are encrypted tmate SSH and URL"
-      printf 'To decrypt, run\n\techo "\e[33mENCRYPTED_STRING\e[0m" | openssl base64 -d | openssl enc -d -aes-256-cbc -k "\e[33mTMATE_ENCRYPT_PASSWORD\e[0m"\n'
+      printf 'To decrypt, run\n    echo "\e[33mENCRYPTED_STRING\e[0m" | openssl base64 -d | openssl enc -d -aes-256-cbc -k "\e[33mTMATE_ENCRYPT_PASSWORD\e[0m"\n'
       printf "\n"
-      printf "SSH: \e[32m $(echo -n "${SSH_LINE}" | openssl enc -e -aes-256-cbc -a -k "${TMATE_ENCRYPT_PASSWORD}") \e[0m"
-      printf "Web: \e[32m $(echo -n "${WEB_LINE}" | openssl enc -e -aes-256-cbc -a -k "${TMATE_ENCRYPT_PASSWORD}") \e[0m"
+      printf "    SSH:\e[32m $(echo -n "${SSH_LINE}" | openssl enc -e -aes-256-cbc -base64 -A -k "${TMATE_ENCRYPT_PASSWORD}") \e[0m\n"
+      printf "    Web:\e[32m $(echo -n "${WEB_LINE}" | openssl enc -e -aes-256-cbc -base64 -A -k "${TMATE_ENCRYPT_PASSWORD}") \e[0m\n"
       printf "\n"
     else
       echo "You have not configured TMATE_ENCRYPT_PASSWORD for encrypting sensitive information"

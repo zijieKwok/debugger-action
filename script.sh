@@ -89,7 +89,7 @@ if [[ ! -z "$SLACK_WEBHOOK_URL" ]]; then
   curl -X POST -H 'Content-type: application/json' --data "{\"text\":\"\`\`\`\n$MSG\n\`\`\`\n${KEEPALIVE_MESSAGE}\"}" "$SLACK_WEBHOOK_URL"
 fi
 
-echo ________________________________________________________________________________
+echo ______________________________________________________________________________________________
 echo To connect to this session copy-n-paste the following into a terminal or browser:
 
 # Wait for connection to close or timeout
@@ -112,15 +112,19 @@ while [ -S ${TMATE_SOCK_FILE} ]; do
 
   if (( timecounter % display_int == 0 )); then
     if [ ! -z "${TMATE_ENCRYPT_PASSWORD}" ]; then
-      echo The following are encrypted tmate SSH and URL
-      echo 'To decrypt, run \`echo "${ENCRYPTED_STRING}" | openssl base64 -d | openssl enc -d -aes-256-cbc -k "${TMATE_ENCRYPT_PASSWORD}"\`'
-      echo SSH: $(echo -n "${SSH_LINE}" | openssl enc -e -aes-256-cbc -a -k "${TMATE_ENCRYPT_PASSWORD}")
-      echo Web: $(echo -n "${WEB_LINE}" | openssl enc -e -aes-256-cbc -a -k "${TMATE_ENCRYPT_PASSWORD}")
+      echo "The following are encrypted tmate SSH and URL"
+      printf 'To decrypt, run\n\techo "\e[33mENCRYPTED_STRING\e[0m" | openssl base64 -d | openssl enc -d -aes-256-cbc -k "\e[33mTMATE_ENCRYPT_PASSWORD\e[0m"\n'
+      printf "\n"
+      printf "SSH: \e[32m $(echo -n "${SSH_LINE}" | openssl enc -e -aes-256-cbc -a -k "${TMATE_ENCRYPT_PASSWORD}") \e[0m"
+      printf "Web: \e[32m $(echo -n "${WEB_LINE}" | openssl enc -e -aes-256-cbc -a -k "${TMATE_ENCRYPT_PASSWORD}") \e[0m"
+      printf "\n"
     else
       echo "You have not configured TMATE_ENCRYPT_PASSWORD for encrypting sensitive information"
-      echo "The tmate SSH and URL are only sent to your Slack (you have set SLACK_WEBHOOK_URL)."
+      echo "The tmate SSH and URL are only sent to your Slack through SLACK_WEBHOOK_URL"
+      printf "\n"
     fi
-    [ ! -f "${KEEPALIVE_FILE}" ] && printf "After connecting you should run \`touch ${KEEPALIVE_FILE}\` to disable the timeout.\nOr the session will be KILLED in $(( $timeout-$timecounter )) seconds\nTo skip this step, simply connect the ssh and exit.\n"
+    [ ! -f "${KEEPALIVE_FILE}" ] && printf "After connecting you should run '\e[32mtouch ${KEEPALIVE_FILE}\e[0m' to disable the timeout.\nOr the session will be \e[31mKILLED\e[0m in $(( $timeout-$timecounter )) seconds\nTo skip this step, simply connect the ssh and exit.\n"
+    echo ______________________________________________________________________________________________
   fi
 
   sleep 1

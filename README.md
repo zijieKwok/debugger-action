@@ -7,7 +7,7 @@ Interactive debugger for GitHub Actions with safety enhancements
 ```
 steps:
 - name: Setup Debug Session
-  uses: tete1030/debugger-action@my
+  uses: tete1030/debugger-action@master
 ```
 
 ### Encrypt sensitive information

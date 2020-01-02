@@ -52,6 +52,10 @@ fi
 # Run deamonized tmate
 echo Running tmate...
 
+now_date="$(date)"
+timeout=$(( ${TIMEOUT_MIN:=30}*60 ))
+kill_date="$(date -d "${now_date} + ${timeout} seconds")"
+
 mkdir "${KEEPALIVE_DIR}" || true
 chmod 777 "${KEEPALIVE_DIR}"
 rm "${KEEPALIVE_FILE}" || true
@@ -65,24 +69,22 @@ if [ ! -z "${TMATE_DOCKER_IMAGE}" ]; then
   docker start "${container_id}"
   docker exec -it -u root "${container_id}" rm "${KEEPALIVE_FILE}" || true
   DK_SHELL="docker exec -it ${container_id} /bin/bash -il"
-  DOCKER_MESSAGE_CMD='printf "This window is running in Docker image.\nTo attach to Github Actions runner, exit current shell\nor create a new tmate window by \"Ctrl-b, c\"\n(This shortcut is only available when connecting through ssh)\nAfter connecting you should run \`touch '${KEEPALIVE_FILE}'\` to disable the timeout.\nOr the session will be KILLED in '${timeout}' seconds\n\n"'
+  DOCKER_MESSAGE_CMD='printf "This window is running in Docker image.\nTo attach to Github Actions runner, exit current shell\nor create a new tmate window by \"Ctrl-b, c\"\n(This shortcut is only available when connecting through ssh)\nAfter connecting you should run \`touch '"${KEEPALIVE_FILE}"'\` to disable the timeout.\nOr the session will be KILLED in '"${timeout}"' seconds at '"${kill_date}"'\n\n"'
   FIRSTWIN_MESSAGE_CMD='printf "This window is now running in GitHub Actions runner.\nTo attach to your Docker image again, use \"attach_docker\" command\n\n"'
   SECWIN_MESSAGE_CMD='printf "The first window of tmate has already been attached to your Docker image.\nThis window is running in GitHub Actions runner.\nTo attach to your Docker image again, use \"attach_docker\" command\n\n"'
   echo "unalias attach_docker 2>/dev/null || true ; alias attach_docker='${DK_SHELL}'" >> ~/.bashrc
   TERM="${TMATE_TERM}" tmate -S ${TMATE_SOCK_FILE} new-session -s ${TMATE_SESSION_NAME} -d "/bin/bash --noprofile --norc -c '${DOCKER_MESSAGE_CMD} ; ${DK_SHELL} ; ${FIRSTWIN_MESSAGE_CMD} ; /bin/bash -li'" \; set-option default-command "/bin/bash --noprofile --norc -c '${SECWIN_MESSAGE_CMD} ; /bin/bash -li'" \; set-option default-terminal "${TMATE_TERM}"
 else
-  MESSAGE_CMD='printf "After connecting you should run \`touch '${KEEPALIVE_FILE}'\` to disable the timeout.\nOr the session will be KILLED in '${timeout}' seconds\n\n"'
+  MESSAGE_CMD='printf "After connecting you should run \`touch '"${KEEPALIVE_FILE}"'\` to disable the timeout.\nOr the session will be KILLED in '"${timeout}"' seconds at '"${kill_date}"'\n\n"'
   echo "unalias attach_docker 2>/dev/null || true" >> ~/.bashrc
   TERM="${TMATE_TERM}" tmate -S ${TMATE_SOCK_FILE} new-session -s ${TMATE_SESSION_NAME} -d "/bin/bash --noprofile --norc -c '${MESSAGE_CMD} ; /bin/bash -li'" \; set-option default-terminal "${TMATE_TERM}"
 fi
 
 tmate -S ${TMATE_SOCK_FILE} wait tmate-ready
 
-timeout=$(( ${TIMEOUT_MIN:=30}*60 ))
-
 SSH_LINE="$(tmate -S ${TMATE_SOCK_FILE} display -p '#{tmate_ssh}')"
 WEB_LINE="$(tmate -S ${TMATE_SOCK_FILE} display -p '#{tmate_web}')"
-KEEPALIVE_MESSAGE="After connecting you should run \`touch ${KEEPALIVE_FILE}\` to disable the timeout. Or the session will be *KILLED* in ${timeout} seconds. To skip this step, simply connect the ssh and exit."
+KEEPALIVE_MESSAGE="After connecting you should run \`touch ${KEEPALIVE_FILE}\` to disable the timeout. Or the session will be *KILLED* in ${timeout} seconds at ${kill_date}. To skip this step, simply connect the ssh and exit."
 
 if [[ ! -z "$SLACK_WEBHOOK_URL" ]]; then
   MSG="SSH: ${SSH_LINE}\nWEB: ${WEB_LINE}"
@@ -120,14 +122,12 @@ while [ -S ${TMATE_SOCK_FILE} ]; do
       printf "\n"
       printf "    SSH:\e[32m $(echo -n "${SSH_LINE}" | openssl enc -e -aes-256-cbc -base64 -A -k "${TMATE_ENCRYPT_PASSWORD}") \e[0m\n"
       printf "    Web:\e[32m $(echo -n "${WEB_LINE}" | openssl enc -e -aes-256-cbc -base64 -A -k "${TMATE_ENCRYPT_PASSWORD}") \e[0m\n"
-      printf "\n"
     else
       echo "You have not configured TMATE_ENCRYPT_PASSWORD for encrypting sensitive information"
       echo "The tmate SSH and URL are only sent to your Slack through SLACK_WEBHOOK_URL"
       echo "For detail, refer to https://github.com/tete103%30/debugger-action/blob/master/README.md"
-      printf "\n"
     fi
-    [ ! -f "${KEEPALIVE_FILE}" ] && printf "After connecting you should run '\e[32mtouch ${KEEPALIVE_FILE}\e[0m' to disable the timeout.\nOr the session will be \e[31mKILLED\e[0m in $(( $timeout-$timecounter )) seconds\nTo skip this step, simply connect the ssh and exit.\n"
+    [ ! -f "${KEEPALIVE_FILE}" ] && printf "\nAfter connecting you should run '\e[32mtouch ${KEEPALIVE_FILE}\e[0m' to disable the timeout.\nOr the session will be \e[31mKILLED\e[0m in $(( $timeout-$timecounter )) seconds at ${kill_date}\nTo skip this step, simply connect the ssh and exit.\n"
     echo ______________________________________________________________________________________________
   fi
 

@@ -9,22 +9,24 @@ jobs:
     name: Test
     runs-on: ubuntu-18.04
     steps:
+    - uses: actions/checkout@v2
     - name: 'Wait for SSH connection (timeout 5min)'
       env:
         TIMEOUT_MIN: 5
-      uses: ${{github.repository}}@${{github.sha}}
+      uses: ./
 
   test-docker-image:
     name: Test on docker image
     runs-on: ubuntu-18.04
     steps:
+    - uses: actions/checkout@v2
     - run: docker tag ubuntu:18.04 mytestimage:latest
     - name: 'Wait for SSH connection (timeout 5min)'
       env:
         TIMEOUT_MIN: 5
         TMATE_DOCKER_IMAGE: mytestimage:latest
         TMATE_DOCKER_IMAGE_EXP: mytestimage:new
-      uses: ${{github.repository}}@${{github.sha}}
+      uses: ./
     - run: docker image ls mytestimage:new
     - run: docker run --rm mytestimage:new ls /root/
 
@@ -32,10 +34,11 @@ jobs:
     name: Test on docker container
     runs-on: ubuntu-18.04
     steps:
+    - uses: actions/checkout@v2
     - run: docker run -d -t --name tmate_container ubuntu:18.04
     - name: 'Wait for SSH connection (timeout 5min)'
       env:
         TIMEOUT_MIN: 5
         TMATE_DOCKER_CONTAINER: tmate_container
-      uses: ${{github.repository}}@${{github.sha}}
+      uses: ./
     - run: docker exec tmate_container ls /root/

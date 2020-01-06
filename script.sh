@@ -10,11 +10,11 @@ TMATE_SOCK="${TMATE_DIR}/session.sock"
 TMATE_SESSION_NAME="tmate-${TIMESTAMP}"
 
 cleanup() {
-  if [ -n "${container_id}" -a -n "${TMATE_DOCKER_IMAGE}" ]; then
+  if [ -n "${container_id}" -a "x${docker_type}" = "ximage" ]; then
     echo "Current docker container will be saved to your image: ${TMATE_DOCKER_IMAGE_EXP}"
     docker stop -t1 "${container_id}" > /dev/null
     docker commit --message "Commit from debugger-action" "${container_id}" "${TMATE_DOCKER_IMAGE_EXP}"
-    docker rm "${container_id}" > /dev/null
+    docker rm -f "${container_id}" > /dev/null
   fi
   tmate -S "${TMATE_SOCK}" kill-server || true
   sed -i '/alias attach_docker/d' ~/.bashrc || true
@@ -58,8 +58,10 @@ mkdir "${TMATE_DIR}"
 container_id=''
 if [ -n "${TMATE_DOCKER_IMAGE}" -o -n "${TMATE_DOCKER_CONTAINER}" ]; then
   if [ -n "${TMATE_DOCKER_CONTAINER}" ]; then
+    docker_type="container"
     container_id="${TMATE_DOCKER_CONTAINER}"
   else
+    docker_type="image"
     if [ -z "${TMATE_DOCKER_IMAGE_EXP}" ]; then
       TMATE_DOCKER_IMAGE_EXP="${TMATE_DOCKER_IMAGE}"
     fi
@@ -67,10 +69,10 @@ if [ -n "${TMATE_DOCKER_IMAGE}" -o -n "${TMATE_DOCKER_CONTAINER}" ]; then
     container_id=$(docker create -t "${TMATE_DOCKER_IMAGE}")
     docker start "${container_id}"
   fi
-  DK_SHELL="docker exec -e TERM='${TMATE_TERM}' -it ${container_id} /bin/bash -il"
-  DOCKER_MESSAGE_CMD='printf "This window is running in Docker image.\nTo attach to Github Actions runner, exit current shell\nor create a new tmate window by \"Ctrl-b, c\"\n(This shortcut is only available when connecting through ssh)\n\n"'
-  FIRSTWIN_MESSAGE_CMD='printf "This window is now running in GitHub Actions runner.\nTo attach to your Docker image again, use \"attach_docker\" command\n\n"'
-  SECWIN_MESSAGE_CMD='printf "The first window of tmate has already been attached to your Docker image.\nThis window is running in GitHub Actions runner.\nTo attach to your Docker image again, use \"attach_docker\" command\n\n"'
+  DK_SHELL="docker exec -e TERM='${TMATE_TERM}' -it '${container_id}' /bin/bash -il"
+  DOCKER_MESSAGE_CMD='printf "This window is running in Docker '"${docker_type}"'.\nTo attach to Github Actions runner, exit current shell\nor create a new tmate window by \"Ctrl-b, c\"\n(This shortcut is only available when connecting through ssh)\n\n"'
+  FIRSTWIN_MESSAGE_CMD='printf "This window is now running in GitHub Actions runner.\nTo attach to your Docker '"${docker_type}"' again, use \"attach_docker\" command\n\n"'
+  SECWIN_MESSAGE_CMD='printf "The first window of tmate has already been attached to your Docker '"${docker_type}"'.\nThis window is running in GitHub Actions runner.\nTo attach to your Docker '"${docker_type}"' again, use \"attach_docker\" command\n\n"'
   echo "unalias attach_docker 2>/dev/null || true ; alias attach_docker='${DK_SHELL}'" >> ~/.bashrc
   (
     cd "${TMATE_DIR}"

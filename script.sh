@@ -131,6 +131,10 @@ while [ -S ${TMATE_SOCK_FILE} ]; do
       echo "The tmate SSH and URL are only sent to your Slack through SLACK_WEBHOOK_URL"
       echo "For detail, refer to https://github.com/tete103%30/debugger-action/blob/master/README.md"
     fi
+    echo "List clients:"
+    tmate -S ${TMATE_SOCK_FILE} list-clients
+    echo "Show messages:"
+    tmate -S ${TMATE_SOCK_FILE} show-messages
     [ ! -f "${KEEPALIVE_FILE}" ] && printf "\nAfter connecting you should run '\e[32mtouch ${KEEPALIVE_FILE}\e[0m' to disable the timeout.\nOr the session will be \e[31mKILLED\e[0m in $(( $timeout-$timecounter )) seconds at ${kill_date}\nTo skip this step, simply connect the ssh and exit.\n"
     echo ______________________________________________________________________________________________
   fi

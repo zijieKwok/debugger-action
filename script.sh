@@ -27,7 +27,7 @@ if [[ -n "$SKIP_DEBUGGER" ]]; then
 fi
 
 if [ -z "${TMATE_ENCRYPT_PASSWORD}" -a -z "${SLACK_WEBHOOK_URL}" ]; then
-  echo "::error::You should set either TMATE_ENCRYPT_PASSWORD or SLACK_WEBHOOK_URL enviroment variables for safety of your secret information, refer to https://github.com/tete103%30/debugger-action/blob/master/README.md"
+  echo "::error::You should set either TMATE_ENCRYPT_PASSWORD or SLACK_WEBHOOK_URL enviroment variables for safety of your secret information, refer to https://github.com/tete103%30/debugger-action/blob/master/README.md" >&2
   exit 1
 fi
 
@@ -74,18 +74,26 @@ if [ -n "${TMATE_DOCKER_IMAGE}" -o -n "${TMATE_DOCKER_CONTAINER}" ]; then
   echo "unalias attach_docker 2>/dev/null || true ; alias attach_docker='${DK_SHELL}'" >> ~/.bashrc
   (
     cd "${TMATE_DIR}"
-    TERM="${TMATE_TERM}" tmate -S "${TMATE_SOCK}" new-session -s ${TMATE_SESSION_NAME} -c "${TMATE_SESSION_PATH}" -d "/bin/bash --noprofile --norc -c '${DOCKER_MESSAGE_CMD} ; ${DK_SHELL} ; ${FIRSTWIN_MESSAGE_CMD} ; /bin/bash -li'" \; set-option default-command "/bin/bash --noprofile --norc -c '${SECWIN_MESSAGE_CMD} ; /bin/bash -li'" \; set-option default-terminal "${TMATE_TERM}"
+    TERM="${TMATE_TERM}" tmate -v -S "${TMATE_SOCK}" new-session -s ${TMATE_SESSION_NAME} -c "${TMATE_SESSION_PATH}" -d "/bin/bash --noprofile --norc -c '${DOCKER_MESSAGE_CMD} ; ${DK_SHELL} ; ${FIRSTWIN_MESSAGE_CMD} ; /bin/bash -li'" \; set-option default-command "/bin/bash --noprofile --norc -c '${SECWIN_MESSAGE_CMD} ; /bin/bash -li'" \; set-option default-terminal "${TMATE_TERM}"
   )
 else
   echo "unalias attach_docker 2>/dev/null || true" >> ~/.bashrc
   (
     cd "${TMATE_DIR}"
-    TERM="${TMATE_TERM}" tmate -S "${TMATE_SOCK}" new-session -s ${TMATE_SESSION_NAME} -c "${TMATE_SESSION_PATH}" -d \; set-option default-terminal "${TMATE_TERM}"
+    TERM="${TMATE_TERM}" tmate -v -S "${TMATE_SOCK}" new-session -s ${TMATE_SESSION_NAME} -c "${TMATE_SESSION_PATH}" -d \; set-option default-terminal "${TMATE_TERM}"
   )
 fi
 
 tmate -S "${TMATE_SOCK}" wait tmate-ready
 TMATE_PID="$(tmate -S "${TMATE_SOCK}" display -p '#{pid}')"
+TMATE_SERVER_LOG="${TMATE_DIR}/tmate-server-${TMATE_PID}.log"
+if [ ! -f "${TMATE_SERVER_LOG}" ]; then
+  echo "::error::No server log found" >&2
+  echo "Files in TMATE_DIR:" >&2
+  ls -l "${TMATE_DIR}"
+  exit 1
+fi
+
 SSH_LINE="$(tmate -S "${TMATE_SOCK}" display -p '#{tmate_ssh}')"
 WEB_LINE="$(tmate -S "${TMATE_SOCK}" display -p '#{tmate_web}')"
 TIMEOUT_MESSAGE="If you don't connect to this session, it will be *KILLED* in ${timeout} seconds at ${kill_date}. To skip this step, simply connect the ssh and exit."
@@ -108,7 +116,7 @@ timecounter=0
 user_connected=0
 while [ -S "${TMATE_SOCK}" ]; do
   connected=0
-  grep -qE '^[[:digit:]\.]+ A mate has joined' "${TMATE_DIR}/tmate-server-${TMATE_PID}.log" && connected=1
+  grep -qE '^[[:digit:]\.]+ A mate has joined' "${TMATE_SERVER_LOG}" && connected=1
   if [ ${connected} -eq 1 -a ${user_connected} -eq 0 ]; then
     echo "You just connected! Timeout is now disabled."
     user_connected=1

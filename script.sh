@@ -8,6 +8,7 @@ TIMESTAMP="$(date +%s%3N)"
 TMATE_DIR="/tmp/tmate-${TIMESTAMP}"
 TMATE_SOCK="${TMATE_DIR}/session.sock"
 TMATE_SESSION_NAME="tmate-${TIMESTAMP}"
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 cleanup() {
   if [ -n "${container_id}" -a "x${docker_type}" = "ximage" ]; then
@@ -38,7 +39,7 @@ if [ -x "$(command -v brew)" ]; then
   [ -z "${TMATE_ENCRYPT_PASSWORD}" ] || ( command -v openssl > /dev/null 2>&1 || brew install openssl )
 fi
 if [ -x "$(command -v apt-get)" ]; then
-  curl -fsSL git.io/tmate.sh | bash
+  "${SCRIPT_DIR}/tmate.sh"
   [ -z "${TMATE_ENCRYPT_PASSWORD}" ] || ( command -v openssl > /dev/null 2>&1 || sudo apt-get -q -yy install openssl )
 fi
 

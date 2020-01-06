@@ -13,9 +13,9 @@ KEEPALIVE_FILE="${KEEPALIVE_DIR}/keepalive"
 TMATE_SESSION_NAME="tmate-${TIMESTAMP_MILLISEC}"
 
 cleanup() {
-  if [ ! -z "${container_id}" ]; then
+  if [ -n "${container_id}" -a -n "${TMATE_DOCKER_IMAGE}" ]; then
     echo "Current docker container will be saved to your image: ${TMATE_DOCKER_IMAGE_EXP}"
-    docker stop "${container_id}" > /dev/null
+    docker stop -t1 "${container_id}" > /dev/null
     docker commit --message "Commit from debugger-action" "${container_id}" "${TMATE_DOCKER_IMAGE_EXP}"
     docker rm "${container_id}" > /dev/null
   fi
@@ -25,7 +25,7 @@ cleanup() {
   rm -f "${TMATE_SOCK_FILE}"
 }
 
-if [[ ! -z "$SKIP_DEBUGGER" ]]; then
+if [[ -n "$SKIP_DEBUGGER" ]]; then
   echo "Skipping debugger because SKIP_DEBUGGER enviroment variable is set"
   exit
 fi
@@ -60,15 +60,19 @@ mkdir "${KEEPALIVE_DIR}" || true
 chmod 777 "${KEEPALIVE_DIR}"
 rm "${KEEPALIVE_FILE}" || true
 container_id=''
-if [ ! -z "${TMATE_DOCKER_IMAGE}" ]; then
-  if [ -z "${TMATE_DOCKER_IMAGE_EXP}" ]; then
-    TMATE_DOCKER_IMAGE_EXP="${TMATE_DOCKER_IMAGE}"
+if [ -n "${TMATE_DOCKER_IMAGE}" -o -n "${TMATE_DOCKER_CONTAINER}" ]; then
+  if [ -n "${TMATE_DOCKER_CONTAINER}" ]; then
+    container_id="${TMATE_DOCKER_CONTAINER}"
+  else
+    if [ -z "${TMATE_DOCKER_IMAGE_EXP}" ]; then
+      TMATE_DOCKER_IMAGE_EXP="${TMATE_DOCKER_IMAGE}"
+    fi
+    echo "Creating docker container for running tmate"
+    container_id=$(docker create -t -v "${KEEPALIVE_DIR}:${KEEPALIVE_DIR}" "${TMATE_DOCKER_IMAGE}")
+    docker start "${container_id}"
   fi
-  echo "Creating docker container for running tmate"
-  container_id=$(docker create -it -v "${KEEPALIVE_DIR}:${KEEPALIVE_DIR}" "${TMATE_DOCKER_IMAGE}")
-  docker start "${container_id}"
-  docker exec -it -u root "${container_id}" rm "${KEEPALIVE_FILE}" || true
-  DK_SHELL="docker exec -it ${container_id} /bin/bash -il"
+  docker exec -i -u root "${container_id}" rm "${KEEPALIVE_FILE}" || true
+  DK_SHELL="docker exec -e TERM='${TMATE_TERM}' -it ${container_id} /bin/bash -il"
   DOCKER_MESSAGE_CMD='printf "This window is running in Docker image.\nTo attach to Github Actions runner, exit current shell\nor create a new tmate window by \"Ctrl-b, c\"\n(This shortcut is only available when connecting through ssh)\nAfter connecting you should run \`touch '"${KEEPALIVE_FILE}"'\` to disable the timeout.\nOr the session will be KILLED in '"${timeout}"' seconds at '"${kill_date}"'\n\n"'
   FIRSTWIN_MESSAGE_CMD='printf "This window is now running in GitHub Actions runner.\nTo attach to your Docker image again, use \"attach_docker\" command\n\n"'
   SECWIN_MESSAGE_CMD='printf "The first window of tmate has already been attached to your Docker image.\nThis window is running in GitHub Actions runner.\nTo attach to your Docker image again, use \"attach_docker\" command\n\n"'
@@ -86,7 +90,7 @@ SSH_LINE="$(tmate -S ${TMATE_SOCK_FILE} display -p '#{tmate_ssh}')"
 WEB_LINE="$(tmate -S ${TMATE_SOCK_FILE} display -p '#{tmate_web}')"
 KEEPALIVE_MESSAGE="After connecting you should run \`touch ${KEEPALIVE_FILE}\` to disable the timeout. Or the session will be *KILLED* in ${timeout} seconds at ${kill_date}. To skip this step, simply connect the ssh and exit."
 
-if [[ ! -z "$SLACK_WEBHOOK_URL" ]]; then
+if [[ -n "$SLACK_WEBHOOK_URL" ]]; then
   MSG="SSH: ${SSH_LINE}\nWEB: ${WEB_LINE}"
   echo -n "Sending information to Slack......"
   curl -X POST -H 'Content-type: application/json' --data "{\"text\":\"\`\`\`\n$MSG\n\`\`\`\n${KEEPALIVE_MESSAGE}\"}" "$SLACK_WEBHOOK_URL"
@@ -116,7 +120,7 @@ while [ -S ${TMATE_SOCK_FILE} ]; do
   fi
 
   if (( timecounter % display_int == 0 )); then
-    if [ ! -z "${TMATE_ENCRYPT_PASSWORD}" ]; then
+    if [ -n "${TMATE_ENCRYPT_PASSWORD}" ]; then
       echo "The following are encrypted tmate SSH and URL"
       printf 'To decrypt, run\n    echo "\e[33mENCRYPTED_STRING\e[0m" | openssl base64 -d | openssl enc -d -aes-256-cbc -k "\e[33mTMATE_ENCRYPT_PASSWORD\e[0m"\n'
       printf "\n"

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>test</title>
+        <script type="text/javascript" src="js/crypto-js/crypto-js.js"></script>
+        <style>
+            .form {
+                display: flex;
+                width: 300px;
+            }
+            textarea, input {
+                flex: 1;
+                font-size: 14px;
+            }
+            pre {
+                display: inline;
+            }
+            p {
+                font-size: 17px;
+            }
+        </style>
+        <script type="text/javascript">
+            function decrypt() {
+                try {
+                    let encrypted_ssh = document.getElementById("encrypted_ssh").value;
+                    let encrypted_web = document.getElementById("encrypted_web").value;
+                    let password = document.getElementById("password").value;
+                    let decrypted_ssh = CryptoJS.AES.decrypt(encrypted_ssh, password).toString(CryptoJS.enc.Utf8);
+                    let decrypted_web = CryptoJS.AES.decrypt(encrypted_web, password).toString(CryptoJS.enc.Utf8);
+                    document.getElementById("ssh").value = decrypted_ssh;
+                    document.getElementById("web").innerText = decrypted_web;
+                    document.getElementById("web").href = decrypted_web;
+
+                    if ((encrypted_ssh.length == 0 && encrypted_web.length == 0) || password.length == 0) {
+                        document.getElementById("wrong").style.display = "none";
+                        document.getElementById("connection").style.display = "none";
+                    } else if (decrypted_ssh.length == 0 && decrypted_web.length == 0) {
+                        document.getElementById("wrong").style.display = "block";
+                        document.getElementById("connection").style.display = "none";
+                    } else {
+                        document.getElementById("wrong").style.display = "none";
+                        document.getElementById("connection").style.display = "block";
+                    }
+                } catch (e) {
+                    console.error(e);
+                    if (password.length == 0) {
+                        document.getElementById("wrong").style.display = "none";
+                        document.getElementById("connection").style.display = "none";
+                    } else {
+                        document.getElementById("wrong").style.display = "block";
+                        document.getElementById("connection").style.display = "none";
+                    }
+                }
+            }
+            function copySSH() {
+                document.getElementById('ssh').select();
+                document.execCommand('copy');
+            }
+        </script>
+    </head>
+    <body>
+        
+        <h1>Retrieve your tmate connection</h1>
+        <div class="form"><textarea name="encrypted_ssh" id="encrypted_ssh" placeholder="Encrypted SSH info" oninput="decrypt()"></textarea></div>
+        <div class="form"><textarea name="encrypted_web" id="encrypted_web" placeholder="Encrypted Web info" oninput="decrypt()"></textarea></div>
+        <div class="form"><input type="password" name="encrypted" id="password" placeholder="Enter your password here" oninput="decrypt()"/></div>
+        <div style="display: none;" id="connection">
+            <p style="color: rgb(0, 99, 0);">Your tmate connection info:</p>
+            <p>SSH: <input style="width: 300px" id="ssh"></input><a href="#" onclick="copySSH()">Copy</a></p>
+            <p>Web: <a id="web"></a></p>
+        </div>
+        <div style="display: none;" id="wrong">
+            <p style="color: red;">Your password is probably wrong</p>
+        </div>
+        <script>
+            const urlParams = new URLSearchParams(window.location.search);
+            document.getElementById("encrypted_ssh").innerText = urlParams.get('ssh');
+            document.getElementById("encrypted_web").innerText = urlParams.get('web');
+            decrypt();
+        </script>
+    </body>
+</html>

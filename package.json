@@ -1,0 +1,11 @@
+{
+  "name": "debugger-action",
+  "version": "1.0.0",
+  "main": "index.html",
+  "repository": "https://github.com/tete1030/debugger-action.git",
+  "author": "Texot <tete1030@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "crypto-js": "^3.1.9-1"
+  }
+}

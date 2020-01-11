@@ -1,81 +1,92 @@
 # Safe Action Debugger
 
-Interactive debugger for GitHub Actions with safety enhancements
+Interactive debugger for GitHub Actions. The connection information can be encrypted or sent privately to you. It also supports attaching docker image/container.
 
 ## Usage
 
-```
+Standard:
+```yml
 steps:
 - name: Setup Debug Session
+  env:
+    TMATE_ENCRYPT_PASSWORD: ${{secrets.TMATE_ENCRYPT_PASSWORD}}
+    SLACK_WEBHOOK_URL: ${{secrets.SLACK_WEBHOOK_URL}}
   uses: tete1030/debugger-action@master
 ```
 
+Attach to docker container:
+```yml
+steps:
+- name: Setup Debug Session
+  env:
+    TMATE_DOCKER_CONTAINER: IMAGE_TAG
+    TMATE_ENCRYPT_PASSWORD: ${{secrets.TMATE_ENCRYPT_PASSWORD}}
+    SLACK_WEBHOOK_URL: ${{secrets.SLACK_WEBHOOK_URL}}
+  uses: tete1030/debugger-action@master
+```
+
+Attach to docker image:
+```yml
+steps:
+- name: Setup Debug Session
+  env:
+    TMATE_DOCKER_IMAGE: IMAGE_TAG
+    TMATE_DOCKER_IMAGE_EXP: IMAGE_TAG
+    TMATE_ENCRYPT_PASSWORD: ${{secrets.TMATE_ENCRYPT_PASSWORD}}
+    SLACK_WEBHOOK_URL: ${{secrets.SLACK_WEBHOOK_URL}}
+  uses: tete1030/debugger-action@master
+```
+
+For safety considerations, you are required to set either of the two envs:
+* `TMATE_ENCRYPT_PASSWORD`, this allows you to encrypt sensitive information.
+* `SLACK_WEBHOOK_URL`, send sensitive information privately to your Slack client.
+* Of course, you can use both of them.
+
 ### Encrypt sensitive information
 
-For safety considerations, you are required to set either `TMATE_ENCRYPT_PASSWORD` or `SLACK_WEBHOOK_URL` in your environment variables. `TMATE_ENCRYPT_PASSWORD` allows you to encrypt sensitive information, or `SLACK_WEBHOOK_URL` allows sensitive information to be sent privately to your Slack client. Of course, you can use both of them.
+If you have set `TMATE_ENCRYPT_PASSWORD`, in the log you will see:
 
-If you have set `TMATE_ENCRYPT_PASSWORD`, in the log for the action you will see:
-```bash
-The following are encrypted tmate SSH and URL
-To decrypt, run
-    echo "ENCRYPTED_STRING" | openssl base64 -d | openssl enc -d -aes-256-cbc -k "TMATE_ENCRYPT_PASSWORD"
+![preview](https://github.com/tete1030/debugger-action/raw/gh-pages/docs/imgs/preview.png)
 
-    SSH: U2FsdGVkX18RKoe25F+zOrjQx/TQ3yeQ2uLaYxCyShJ8EU3Ns0cTwRMtNKgXZ4Hyzje2GOBr/FUrKNt2jQyOjg== 
-    Web: U2FsdGVkX18HEMUbl0xvxPUyQ8LDI6+KucuVs88eYIz+dJ5ftv0+rYxusY0kApMEkWjXZfzJUKv1NjjxquOldQ==
+Since in Github Actions, log messages are not shown completely before the step finishes, the message is printed every 30 seconds. **If you do not see any message in the debugger step**, wait for 30~60 seconds.
 
-After connecting you should run 'touch /tmp/tmate-1577812088/keepalive' to disable the timeout.
-Or the session will be KILLED in 300 seconds
-To skip this step, simply connect the ssh and exit.
-```
-Follow the instructions to decrypt either SSH command line or Web URL of tmate. For example, if `TMATE_ENCRYPT_PASSWORD` is `my_password`, run
-```bash
-echo "U2FsdGVkX18RKoe25F+zOrjQx/TQ3yeQ2uLaYxCyShJ8EU3Ns0cTwRMtNKgXZ4Hyzje2GOBr/FUrKNt2jQyOjg==" | openssl base64 -d | openssl enc -d -aes-256-cbc -k "my_password"
-```
-You will get:
-```bash
-ssh yaqAx5vpGC5Ch7Mvw5u9sXxq4@nyc1.tmate.io
-```
+Follow the instructions to decrypt either SSH command line or Web URL of the debugger. The following screenshot shows the webpage built for decrypting your connection information.
 
-### Or, sending plain sensitive information to your Slack
+![decryptor](https://github.com/tete1030/debugger-action/raw/gh-pages/docs/imgs/decryptor.png)
+
+
+### Or, sending plain sensitive information to Slack
 
 > See [instructions](https://api.slack.com/messaging/webhooks) on how to get your Slack Webhook URL
 
-If you don't want to use `TMATE_ENCRYPT_PASSWORD`, your sensitive information will only be sent in plain text to your Slack client, only if you have provided `SLACK_WEBHOOK_URL`. The log will show:
+If you have provided `SLACK_WEBHOOK_URL`, you will receive a message that contains plain connection info
 
-```
-You have not configured TMATE_ENCRYPT_PASSWORD for encrypting sensitive information
-The tmate SSH and URL are only sent to your Slack through SLACK_WEBHOOK_URL
+![slack](https://github.com/tete1030/debugger-action/raw/gh-pages/docs/imgs/slack.png)
 
-After connecting you should run 'touch /tmp/tmate-1577812404/keepalive' to disable the timeout.
-Or the session will be KILLED in 300 seconds
-To skip this step, simply connect the ssh and exit.
-```
+### Session timeout and message display interval
 
-### You must use either the encryption or Slack
+There is a global timeout after 30 minutes (if you didn't specify other value for `TIMEOUT_MIN`). After you connect to the session, the timeout will be automatically disabled.
 
-If you haven't set `SLACK_WEBHOOK_URL` either, an error will be raised. The risk of publishing your tmate connection is huge, because **other people can retrieve your secrets through tmate**. 
+The connection info are displayed every 30 seconds. You can customize by setting `DISP_INTERVAL_SEC` env.
 
-### About message display and timeout
+### Attach to docker
 
-> TIPS: All above messages are displayed every 30 seconds for 30 minutes. (You can customize by setting `TIMEOUT_MIN` and `DISP_INTERVAL_SEC` env)
+> The debugger action just attaches to docker image/container, it does not install anything inside. After you quit the docker image, the changes you made will be saved to the original image or specified one.
 
-Simply follow the instructions and copy the (decrypted) ssh command into your terminal, or the Web URL to your browser, to create an ssh connection to the running instance. The session will close immedeatly after closing the ssh connection to the running instance.
+You can make the debugger attach to specified docker image/container by setting `TMATE_DOCKER_IMAGE` or `TMATE_DOCKER_CONTAINER`. It is easy to switch between Github Actions runner and docker image/container. 
 
-There is a global timeout after 30 minutes (if you didn't specify other value). This will close any open ssh sessions. **To prevent the session from being terminated**, run:
+![docker](https://github.com/tete1030/debugger-action/raw/gh-pages/docs/imgs/docker.png)
 
-```bash
-# replace * with the value provided in your message
-touch /tmp/tmate-*/keepalive
-```
-
-## Options
+## Environment variables
 
 - `TIMEOUT_MIN`: timeout in minutes
-- `DISP_INTERVAL_SEC`: display interval in seconds
+- `DISP_INTERVAL_SEC`: message display interval in seconds
 - `SLACK_WEBHOOK_URL`: Slack Webhook URL for sending message to your slack
 - `TMATE_ENCRYPT_PASSWORD`: the password used for encrypting tmate message shown in the log
-- `TMATE_DOCKER_IMAGE`: if you want the debugger to be used in docker image, specify the image's name
-- `TMATE_DOCKER_IMAGE_EXP`: specify the image name for saving the changes during docker image debugging
+- `TMATE_DOCKER_CONTAINER`: the docker container name
+- `TMATE_DOCKER_IMAGE`: the docker image tag
+- `TMATE_DOCKER_IMAGE_EXP`: the docker image tag for saving changes you made in debugger. (defaults to `TMATE_DOCKER_IMAGE`)
+- `TMATE_TERM`: specify the `TERM` environment variable. (defaults to `screen-256color`)
 
 ## Acknowledgments
 

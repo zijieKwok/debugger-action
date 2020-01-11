@@ -90,6 +90,7 @@ You can make the debugger attach to specified docker image/container by setting 
 
 ## Acknowledgments
 
+* P3TERX's [debugger-action](https://github.com/P3TERX/debugger-action)
 * [tmate.io](https://tmate.io)
 * Max Schmitt's [action-tmate](https://github.com/mxschmitt/action-tmate)
 * Christopher Sexton's [debugger-action](https://github.com/csexton/debugger-action)

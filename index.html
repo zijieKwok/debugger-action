@@ -1,12 +1,15 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title>tmate connection decryptor</title>
+        <title>Debugger Connection Decryptor</title>
         <script type="text/javascript" src="js/crypto-js/crypto-js.js"></script>
         <style>
             .form {
                 display: flex;
                 width: 300px;
+            }
+            textarea {
+                height: 60px;
             }
             textarea, input {
                 flex: 1;
@@ -16,6 +19,10 @@
                 display: inline;
             }
             p {
+                font-size: 17px;
+            }
+            .copy {
+                margin-left: 10px;
                 font-size: 17px;
             }
         </style>
@@ -67,13 +74,13 @@
     </head>
     <body>
         
-        <h1>Retrieve your tmate connection</h1>
+        <h1>Retrieve your debugger connection info</h1>
         <div class="form"><textarea name="encrypted_ssh" id="encrypted_ssh" placeholder="Encrypted SSH info" oninput="decrypt()"></textarea></div>
         <div class="form"><textarea name="encrypted_web" id="encrypted_web" placeholder="Encrypted Web info" oninput="decrypt()"></textarea></div>
         <div class="form"><input type="password" name="encrypted" id="password" placeholder="Enter your password here" oninput="decrypt()"/></div>
         <div style="display: none;" id="connection">
-            <p style="color: rgb(0, 99, 0);">Your tmate connection info:</p>
-            <p>SSH: <input style="width: 300px" id="ssh"></input><a href="#" onclick="copySSH()">Copy</a></p>
+            <p style="color: rgb(0, 99, 0);">Your debugger connection:</p>
+            <p>SSH: <input style="width: 500px; font-size: 17px;" id="ssh"></input><button class="copy" onclick="copySSH()">Copy</button></p>
             <p>Web: <a id="web"></a></p>
         </div>
         <div style="display: none;" id="wrong">

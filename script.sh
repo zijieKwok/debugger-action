@@ -23,7 +23,7 @@ uriencode() {
 }
 
 # For mount docker volume, do not directly use '/tmp' as the dir
-TMATE_TERM=${TMATE_TERM:-screen-256color}
+TMATE_TERM="${TMATE_TERM:-screen-256color}"
 TIMESTAMP="$(date +%s%3N)"
 TMATE_DIR="/tmp/tmate-${TIMESTAMP}"
 TMATE_SOCK="${TMATE_DIR}/session.sock"

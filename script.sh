@@ -120,8 +120,8 @@ fi
 SSH_LINE="$(tmate -S "${TMATE_SOCK}" display -p '#{tmate_ssh}')"
 WEB_LINE="$(tmate -S "${TMATE_SOCK}" display -p '#{tmate_web}')"
 if [ -n "${TMATE_ENCRYPT_PASSWORD}" ]; then
-  SSH_ENC="$(echo -n "${SSH_LINE}" | openssl enc -e -aes-256-cbc -base64 -A -k "${TMATE_ENCRYPT_PASSWORD}")"
-  WEB_ENC="$(echo -n "${WEB_LINE}" | openssl enc -e -aes-256-cbc -base64 -A -k "${TMATE_ENCRYPT_PASSWORD}")"
+  SSH_ENC="$(echo -n "${SSH_LINE}" | openssl enc -e -aes-256-cbc -md md5 -base64 -A -pass pass:"${TMATE_ENCRYPT_PASSWORD}")"
+  WEB_ENC="$(echo -n "${WEB_LINE}" | openssl enc -e -aes-256-cbc -md md5 -base64 -A -pass pass:"${TMATE_ENCRYPT_PASSWORD}")"
   SSH_ENC_URI="$(uriencode "${SSH_ENC}")"
   WEB_ENC_URI="$(uriencode "${WEB_ENC}")"
 fi
@@ -171,7 +171,7 @@ while [ -S "${TMATE_SOCK}" ]; do
       echo "To decrypt, open the following address and type in your password"
       echo "    https://tete1030.github.io/debugger-action/?ssh=${SSH_ENC_URI}&web=${WEB_ENC_URI}"
       echo "Or run"
-      echo -e '    echo "\e[33mENCRYPTED_STRING\e[0m" | openssl base64 -d | openssl enc -d -aes-256-cbc -k "\e[33mTMATE_ENCRYPT_PASSWORD\e[0m"'
+      echo -e '    echo "\e[33mENCRYPTED_STRING\e[0m" | openssl enc -d -base64 -A -aes-256-cbc -md md5 -pass pass:"\e[33mTMATE_ENCRYPT_PASSWORD\e[0m"'
     else
       echo "You have not configured TMATE_ENCRYPT_PASSWORD for encrypting sensitive information"
       echo "The tmate SSH and URL are only sent to your Slack through SLACK_WEBHOOK_URL"

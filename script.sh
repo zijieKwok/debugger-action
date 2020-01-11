@@ -29,6 +29,9 @@ TMATE_DIR="/tmp/tmate-${TIMESTAMP}"
 TMATE_SOCK="${TMATE_DIR}/session.sock"
 TMATE_SESSION_NAME="tmate-${TIMESTAMP}"
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+# Shorten this URL to avoid mask by Github Actions Runner
+README_URL="https://github.com/tete1030/debugger-action/blob/master/README.md"
+README_URL_SHORT="$(curl -si https://git.io -F "url=${README_URL}" | tr -d '\r' | sed -En 's/^Location: (.*)/\1/p')"
 
 cleanup() {
   if [ -n "${container_id}" ] && [ "x${docker_type}" = "ximage" ]; then
@@ -124,6 +127,9 @@ if [ -n "${TMATE_ENCRYPT_PASSWORD}" ]; then
   WEB_ENC="$(echo -n "${WEB_LINE}" | openssl enc -e -aes-256-cbc -md md5 -base64 -A -pass pass:"${TMATE_ENCRYPT_PASSWORD}")"
   SSH_ENC_URI="$(uriencode "${SSH_ENC}")"
   WEB_ENC_URI="$(uriencode "${WEB_ENC}")"
+  # Shorten this URL to avoid mask by Github Actions Runner
+  ENC_URL="https://tete1030.github.io/debugger-action/?ssh=${SSH_ENC_URI}&web=${WEB_ENC_URI}"
+  ENC_URL_SHORT="$(curl -si https://git.io -F "url=${ENC_URL}" | tr -d '\r' | sed -En 's/^Location: (.*)/\1/p')"
 fi
 TIMEOUT_MESSAGE="If you don't connect to this session, it will be *SKIPPED* in ${timeout} seconds at ${kill_date}. To skip this step now, simply connect the ssh and exit."
 
@@ -169,13 +175,13 @@ while [ -S "${TMATE_SOCK}" ]; do
       echo -e "    SSH:\e[32m ${SSH_ENC} \e[0m"
       echo -e "    Web:\e[32m ${WEB_ENC} \e[0m"
       echo "To decrypt, open the following address and type in your password"
-      echo "    https://tete1030.github.io/debugger-action/?ssh=${SSH_ENC_URI}&web=${WEB_ENC_URI}"
+      echo "    ${ENC_URL_SHORT}"
       echo "Or run"
       echo -e '    echo "\e[33mENCRYPTED_STRING\e[0m" | openssl enc -d -base64 -A -aes-256-cbc -md md5 -pass pass:"\e[33mTMATE_ENCRYPT_PASSWORD\e[0m"'
     else
       echo "You have not configured TMATE_ENCRYPT_PASSWORD for encrypting sensitive information"
       echo "The debugger connection info is only sent to your Slack through SLACK_WEBHOOK_URL"
-      echo "For detail, refer to https://github.com/tete103%30/debugger-action/blob/master/README.md"
+      echo "For detail, refer to ${README_URL_SHORT}"
     fi
     [ "x${user_connected}" != "x1" ] && (
       echo -e "\nIf you don't connect to this session, it will be \e[31mSKIPPED\e[0m in $(( timeout-timecounter )) seconds at ${kill_date}"

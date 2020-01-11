@@ -131,12 +131,11 @@ if [[ -n "$SLACK_WEBHOOK_URL" ]]; then
   MSG="SSH: ${SSH_LINE}\nWEB: ${WEB_LINE}"
   echo -n "Sending information to Slack......"
   curl -X POST -H 'Content-type: application/json' --data "{\"text\":\"\`\`\`\n$MSG\n\`\`\`\n${TIMEOUT_MESSAGE}\"}" "$SLACK_WEBHOOK_URL"
-  printf "\n"
+  echo ""
 fi
 
 echo ______________________________________________________________________________________________
-echo To connect to this session copy-n-paste the following into a terminal or browser:
-printf "\n"
+echo ""
 
 # Wait for connection to close or timeout
 display_int=${DISP_INTERVAL_SEC:=30}
@@ -152,7 +151,7 @@ while [ -S "${TMATE_SOCK}" ]; do
   fi
   if [ ${user_connected} -ne 1 ]; then
     if (( timecounter > timeout )); then
-      echo Waiting on tmate connection timed out!
+      echo "Waiting on tmate connection timed out! This step is skipped now."
       cleanup
 
       if [ "x$TIMEOUT_FAIL" = "x1" ] || [ "x$TIMEOUT_FAIL" = "xtrue" ]; then
@@ -164,8 +163,9 @@ while [ -S "${TMATE_SOCK}" ]; do
   fi
 
   if (( timecounter % display_int == 0 )); then
+    echo "You can connect to this session in a terminal or browser"
     if [ -n "${TMATE_ENCRYPT_PASSWORD}" ]; then
-      echo "The following are encrypted tmate connection info"
+      echo "The following are encrypted debugger connection info"
       echo -e "    SSH:\e[32m ${SSH_ENC} \e[0m"
       echo -e "    Web:\e[32m ${WEB_ENC} \e[0m"
       echo "To decrypt, open the following address and type in your password"
@@ -174,7 +174,7 @@ while [ -S "${TMATE_SOCK}" ]; do
       echo -e '    echo "\e[33mENCRYPTED_STRING\e[0m" | openssl enc -d -base64 -A -aes-256-cbc -md md5 -pass pass:"\e[33mTMATE_ENCRYPT_PASSWORD\e[0m"'
     else
       echo "You have not configured TMATE_ENCRYPT_PASSWORD for encrypting sensitive information"
-      echo "The tmate SSH and URL are only sent to your Slack through SLACK_WEBHOOK_URL"
+      echo "The debugger connection info is only sent to your Slack through SLACK_WEBHOOK_URL"
       echo "For detail, refer to https://github.com/tete103%30/debugger-action/blob/master/README.md"
     fi
     [ "x${user_connected}" != "x1" ] && (
@@ -188,4 +188,5 @@ while [ -S "${TMATE_SOCK}" ]; do
   timecounter=$((timecounter+1))
 done
 
+echo "The connection is terminated."
 cleanup

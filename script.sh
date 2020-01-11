@@ -2,6 +2,26 @@
 
 set -eo pipefail
 
+uriencode() {
+  s="${1//'%'/%25}"
+  s="${s//' '/%20}"
+  s="${s//'"'/%22}"
+  s="${s//'#'/%23}"
+  s="${s//'$'/%24}"
+  s="${s//'&'/%26}"
+  s="${s//'+'/%2B}"
+  s="${s//','/%2C}"
+  s="${s//'/'/%2F}"
+  s="${s//':'/%3A}"
+  s="${s//';'/%3B}"
+  s="${s//'='/%3D}"
+  s="${s//'?'/%3F}"
+  s="${s//'@'/%40}"
+  s="${s//'['/%5B}"
+  s="${s//']'/%5D}"
+  printf %s "$s"
+}
+
 # For mount docker volume, do not directly use '/tmp' as the dir
 TMATE_TERM=${TMATE_TERM:-screen-256color}
 TIMESTAMP="$(date +%s%3N)"
@@ -11,7 +31,7 @@ TMATE_SESSION_NAME="tmate-${TIMESTAMP}"
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 cleanup() {
-  if [ -n "${container_id}" -a "x${docker_type}" = "ximage" ]; then
+  if [ -n "${container_id}" ] && [ "x${docker_type}" = "ximage" ]; then
     echo "Current docker container will be saved to your image: ${TMATE_DOCKER_IMAGE_EXP}"
     docker stop -t1 "${container_id}" > /dev/null
     docker commit --message "Commit from debugger-action" "${container_id}" "${TMATE_DOCKER_IMAGE_EXP}"
@@ -27,7 +47,7 @@ if [[ -n "$SKIP_DEBUGGER" ]]; then
   exit
 fi
 
-if [ -z "${TMATE_ENCRYPT_PASSWORD}" -a -z "${SLACK_WEBHOOK_URL}" ]; then
+if [ -z "${TMATE_ENCRYPT_PASSWORD}" ] && [ -z "${SLACK_WEBHOOK_URL}" ]; then
   echo "::error::You should set either TMATE_ENCRYPT_PASSWORD or SLACK_WEBHOOK_URL enviroment variables for safety of your secret information, refer to https://github.com/tete103%30/debugger-action/blob/master/README.md" >&2
   exit 1
 fi
@@ -57,7 +77,7 @@ TMATE_SESSION_PATH="$(pwd)"
 mkdir "${TMATE_DIR}"
 
 container_id=''
-if [ -n "${TMATE_DOCKER_IMAGE}" -o -n "${TMATE_DOCKER_CONTAINER}" ]; then
+if [ -n "${TMATE_DOCKER_IMAGE}" ] || [ -n "${TMATE_DOCKER_CONTAINER}" ]; then
   if [ -n "${TMATE_DOCKER_CONTAINER}" ]; then
     docker_type="container"
     container_id="${TMATE_DOCKER_CONTAINER}"
@@ -77,13 +97,13 @@ if [ -n "${TMATE_DOCKER_IMAGE}" -o -n "${TMATE_DOCKER_CONTAINER}" ]; then
   echo "unalias attach_docker 2>/dev/null || true ; alias attach_docker='${DK_SHELL}'" >> ~/.bashrc
   (
     cd "${TMATE_DIR}"
-    TERM="${TMATE_TERM}" tmate -v -S "${TMATE_SOCK}" new-session -s ${TMATE_SESSION_NAME} -c "${TMATE_SESSION_PATH}" -d "/bin/bash --noprofile --norc -c '${DOCKER_MESSAGE_CMD} ; ${DK_SHELL} ; ${FIRSTWIN_MESSAGE_CMD} ; /bin/bash -li'" \; set-option default-command "/bin/bash --noprofile --norc -c '${SECWIN_MESSAGE_CMD} ; /bin/bash -li'" \; set-option default-terminal "${TMATE_TERM}"
+    TERM="${TMATE_TERM}" tmate -v -S "${TMATE_SOCK}" new-session -s "${TMATE_SESSION_NAME}" -c "${TMATE_SESSION_PATH}" -d "/bin/bash --noprofile --norc -c '${DOCKER_MESSAGE_CMD} ; ${DK_SHELL} ; ${FIRSTWIN_MESSAGE_CMD} ; /bin/bash -li'" \; set-option default-command "/bin/bash --noprofile --norc -c '${SECWIN_MESSAGE_CMD} ; /bin/bash -li'" \; set-option default-terminal "${TMATE_TERM}"
   )
 else
   echo "unalias attach_docker 2>/dev/null || true" >> ~/.bashrc
   (
     cd "${TMATE_DIR}"
-    TERM="${TMATE_TERM}" tmate -v -S "${TMATE_SOCK}" new-session -s ${TMATE_SESSION_NAME} -c "${TMATE_SESSION_PATH}" -d \; set-option default-terminal "${TMATE_TERM}"
+    TERM="${TMATE_TERM}" tmate -v -S "${TMATE_SOCK}" new-session -s "${TMATE_SESSION_NAME}" -c "${TMATE_SESSION_PATH}" -d \; set-option default-terminal "${TMATE_TERM}"
   )
 fi
 
@@ -99,6 +119,12 @@ fi
 
 SSH_LINE="$(tmate -S "${TMATE_SOCK}" display -p '#{tmate_ssh}')"
 WEB_LINE="$(tmate -S "${TMATE_SOCK}" display -p '#{tmate_web}')"
+if [ -n "${TMATE_ENCRYPT_PASSWORD}" ]; then
+  SSH_ENC="$(echo -n "${SSH_LINE}" | openssl enc -e -aes-256-cbc -base64 -A -k "${TMATE_ENCRYPT_PASSWORD}")"
+  WEB_ENC="$(echo -n "${WEB_LINE}" | openssl enc -e -aes-256-cbc -base64 -A -k "${TMATE_ENCRYPT_PASSWORD}")"
+  SSH_ENC_URI="$(uriencode "${SSH_ENC}")"
+  WEB_ENC_URI="$(uriencode "${WEB_ENC}")"
+fi
 TIMEOUT_MESSAGE="If you don't connect to this session, it will be *KILLED* in ${timeout} seconds at ${kill_date}. To skip this step, simply connect the ssh and exit."
 
 if [[ -n "$SLACK_WEBHOOK_URL" ]]; then
@@ -120,7 +146,7 @@ user_connected=0
 while [ -S "${TMATE_SOCK}" ]; do
   connected=0
   grep -qE '^[[:digit:]\.]+ A mate has joined' "${TMATE_SERVER_LOG}" && connected=1
-  if [ ${connected} -eq 1 -a ${user_connected} -eq 0 ]; then
+  if [ ${connected} -eq 1 ] && [ ${user_connected} -eq 0 ]; then
     echo "You just connected! Timeout is now disabled."
     user_connected=1
   fi
@@ -129,7 +155,7 @@ while [ -S "${TMATE_SOCK}" ]; do
       echo Waiting on tmate connection timed out!
       cleanup
 
-      if [ "x$TIMEOUT_FAIL" = "x1" -o "x$TIMEOUT_FAIL" = "xtrue" ]; then
+      if [ "x$TIMEOUT_FAIL" = "x1" ] || [ "x$TIMEOUT_FAIL" = "xtrue" ]; then
         exit 1
       else
         exit 0
@@ -139,22 +165,27 @@ while [ -S "${TMATE_SOCK}" ]; do
 
   if (( timecounter % display_int == 0 )); then
     if [ -n "${TMATE_ENCRYPT_PASSWORD}" ]; then
-      echo "The following are encrypted tmate SSH and URL"
-      printf 'To decrypt, run\n    echo "\e[33mENCRYPTED_STRING\e[0m" | openssl base64 -d | openssl enc -d -aes-256-cbc -k "\e[33mTMATE_ENCRYPT_PASSWORD\e[0m"\n'
-      printf "\n"
-      printf "    SSH:\e[32m $(echo -n "${SSH_LINE}" | openssl enc -e -aes-256-cbc -base64 -A -k "${TMATE_ENCRYPT_PASSWORD}") \e[0m\n"
-      printf "    Web:\e[32m $(echo -n "${WEB_LINE}" | openssl enc -e -aes-256-cbc -base64 -A -k "${TMATE_ENCRYPT_PASSWORD}") \e[0m\n"
+      echo "The following are encrypted tmate connection info"
+      echo "    SSH:\e[32m ${SSH_ENC} \e[0m"
+      echo "    Web:\e[32m ${WEB_ENC} \e[0m"
+      echo "To decrypt, open the following address and type in your password"
+      echo "    https://tete1030.github.io/debugger-action/?ssh=${SSH_ENC_URI}&web=${WEB_ENC_URI}"
+      echo "Or run"
+      echo '    echo "\e[33mENCRYPTED_STRING\e[0m" | openssl base64 -d | openssl enc -d -aes-256-cbc -k "\e[33mTMATE_ENCRYPT_PASSWORD\e[0m"'
     else
       echo "You have not configured TMATE_ENCRYPT_PASSWORD for encrypting sensitive information"
       echo "The tmate SSH and URL are only sent to your Slack through SLACK_WEBHOOK_URL"
       echo "For detail, refer to https://github.com/tete103%30/debugger-action/blob/master/README.md"
     fi
-    [ "x${user_connected}" != "x1" ] && printf "If you don't connect to this session, it will be \e[31mKILLED\e[0m in $(( $timeout-$timecounter )) seconds at ${kill_date}\nTo skip this step, simply connect the ssh and exit.\n"
+    [ "x${user_connected}" != "x1" ] && (
+      echo -e "\nIf you don't connect to this session, it will be \e[31mKILLED\e[0m in $(( timeout-timecounter )) seconds at ${kill_date}"
+      echo "To skip this step, simply connect the ssh and exit."
+    )
     echo ______________________________________________________________________________________________
   fi
 
   sleep 1
-  timecounter=$(($timecounter+1))
+  timecounter=$((timecounter+1))
 done
 
 cleanup

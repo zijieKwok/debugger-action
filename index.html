@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title>test</title>
+        <title>tmate connection decryptor</title>
         <script type="text/javascript" src="js/crypto-js/crypto-js.js"></script>
         <style>
             .form {
@@ -21,35 +21,42 @@
         </style>
         <script type="text/javascript">
             function decrypt() {
-                try {
-                    let encrypted_ssh = document.getElementById("encrypted_ssh").value;
-                    let encrypted_web = document.getElementById("encrypted_web").value;
-                    let password = document.getElementById("password").value;
-                    let decrypted_ssh = CryptoJS.AES.decrypt(encrypted_ssh, password).toString(CryptoJS.enc.Utf8);
-                    let decrypted_web = CryptoJS.AES.decrypt(encrypted_web, password).toString(CryptoJS.enc.Utf8);
-                    document.getElementById("ssh").value = decrypted_ssh;
-                    document.getElementById("web").innerText = decrypted_web;
-                    document.getElementById("web").href = decrypted_web;
-
-                    if ((encrypted_ssh.length == 0 && encrypted_web.length == 0) || password.length == 0) {
-                        document.getElementById("wrong").style.display = "none";
-                        document.getElementById("connection").style.display = "none";
-                    } else if (decrypted_ssh.length == 0 && decrypted_web.length == 0) {
-                        document.getElementById("wrong").style.display = "block";
-                        document.getElementById("connection").style.display = "none";
-                    } else {
+                function set_state(state) {
+                    if (state == 'conn') {
                         document.getElementById("wrong").style.display = "none";
                         document.getElementById("connection").style.display = "block";
-                    }
-                } catch (e) {
-                    console.error(e);
-                    if (password.length == 0) {
-                        document.getElementById("wrong").style.display = "none";
-                        document.getElementById("connection").style.display = "none";
-                    } else {
+                    } else if (state == 'wrong') {
                         document.getElementById("wrong").style.display = "block";
                         document.getElementById("connection").style.display = "none";
+                    } else if (state == 'none') {
+                        document.getElementById("wrong").style.display = "none";
+                        document.getElementById("connection").style.display = "none";
                     }
+                }
+                let password = document.getElementById("password").value;
+                if (password.length > 0) {
+                    try {
+                        let encrypted_ssh = document.getElementById("encrypted_ssh").value;
+                        let encrypted_web = document.getElementById("encrypted_web").value;
+                        let decrypted_ssh = CryptoJS.AES.decrypt(encrypted_ssh, password).toString(CryptoJS.enc.Utf8);
+                        let decrypted_web = CryptoJS.AES.decrypt(encrypted_web, password).toString(CryptoJS.enc.Utf8);
+                        document.getElementById("ssh").value = decrypted_ssh;
+                        document.getElementById("web").innerText = decrypted_web;
+                        document.getElementById("web").href = decrypted_web;
+
+                        if (encrypted_ssh.length == 0 && encrypted_web.length == 0) {
+                            set_state("none");
+                        } else if (decrypted_ssh.length == 0 && decrypted_web.length == 0) {
+                            set_state("wrong");
+                        } else {
+                            set_state("conn");
+                        }
+                    } catch (e) {
+                        console.error(e);
+                        set_state("wrong");
+                    }
+                } else {
+                    set_state("none");
                 }
             }
             function copySSH() {

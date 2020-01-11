@@ -11,7 +11,7 @@ steps:
   env:
     TMATE_ENCRYPT_PASSWORD: ${{secrets.TMATE_ENCRYPT_PASSWORD}}
     SLACK_WEBHOOK_URL: ${{secrets.SLACK_WEBHOOK_URL}}
-  uses: tete1030/debugger-action@master
+  uses: tete1030/safe-debugger-action@master
 ```
 
 Attach to docker container:
@@ -22,7 +22,7 @@ steps:
     TMATE_DOCKER_CONTAINER: IMAGE_TAG
     TMATE_ENCRYPT_PASSWORD: ${{secrets.TMATE_ENCRYPT_PASSWORD}}
     SLACK_WEBHOOK_URL: ${{secrets.SLACK_WEBHOOK_URL}}
-  uses: tete1030/debugger-action@master
+  uses: tete1030/safe-debugger-action@master
 ```
 
 Attach to docker image:
@@ -34,7 +34,7 @@ steps:
     TMATE_DOCKER_IMAGE_EXP: IMAGE_TAG
     TMATE_ENCRYPT_PASSWORD: ${{secrets.TMATE_ENCRYPT_PASSWORD}}
     SLACK_WEBHOOK_URL: ${{secrets.SLACK_WEBHOOK_URL}}
-  uses: tete1030/debugger-action@master
+  uses: tete1030/safe-debugger-action@master
 ```
 
 For safety considerations, you are required to set either of the two envs:
@@ -46,13 +46,13 @@ For safety considerations, you are required to set either of the two envs:
 
 If you have set `TMATE_ENCRYPT_PASSWORD`, in the log you will see:
 
-![preview](https://github.com/tete1030/debugger-action/raw/gh-pages/docs/imgs/preview.png)
+![preview](https://github.com/tete1030/safe-debugger-action/raw/gh-pages/docs/imgs/preview.png)
 
 Since in Github Actions, log messages are not shown completely before the step finishes, the message is printed every 30 seconds. **If you do not see any message in the debugger step**, wait for 30~60 seconds.
 
 Follow the instructions to decrypt either SSH command line or Web URL of the debugger. The following screenshot shows the webpage built for decrypting your connection information.
 
-![decryptor](https://github.com/tete1030/debugger-action/raw/gh-pages/docs/imgs/decryptor.png)
+![decryptor](https://github.com/tete1030/safe-debugger-action/raw/gh-pages/docs/imgs/decryptor.png)
 
 
 ### Or, sending plain sensitive information to Slack
@@ -61,7 +61,7 @@ Follow the instructions to decrypt either SSH command line or Web URL of the deb
 
 If you have provided `SLACK_WEBHOOK_URL`, you will receive a message that contains plain connection info
 
-![slack](https://github.com/tete1030/debugger-action/raw/gh-pages/docs/imgs/slack.png)
+![slack](https://github.com/tete1030/safe-debugger-action/raw/gh-pages/docs/imgs/slack.png)
 
 ### Session timeout and message display interval
 
@@ -75,7 +75,7 @@ The connection info are displayed every 30 seconds. You can customize by setting
 
 You can make the debugger attach to specified docker image/container by setting `TMATE_DOCKER_IMAGE` or `TMATE_DOCKER_CONTAINER`. It is easy to switch between Github Actions runner and docker image/container. 
 
-![docker](https://github.com/tete1030/debugger-action/raw/gh-pages/docs/imgs/docker.png)
+![docker](https://github.com/tete1030/safe-debugger-action/raw/gh-pages/docs/imgs/docker.png)
 
 ## Environment variables
 

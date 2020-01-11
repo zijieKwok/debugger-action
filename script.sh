@@ -30,14 +30,14 @@ TMATE_SOCK="${TMATE_DIR}/session.sock"
 TMATE_SESSION_NAME="tmate-${TIMESTAMP}"
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 # Shorten this URL to avoid mask by Github Actions Runner
-README_URL="https://github.com/tete1030/debugger-action/blob/master/README.md"
+README_URL="https://github.com/tete1030/safe-debugger-action/blob/master/README.md"
 README_URL_SHORT="$(curl -si https://git.io -F "url=${README_URL}" | tr -d '\r' | sed -En 's/^Location: (.*)/\1/p')"
 
 cleanup() {
   if [ -n "${container_id}" ] && [ "x${docker_type}" = "ximage" ]; then
     echo "Current docker container will be saved to your image: ${TMATE_DOCKER_IMAGE_EXP}"
     docker stop -t1 "${container_id}" > /dev/null
-    docker commit --message "Commit from debugger-action" "${container_id}" "${TMATE_DOCKER_IMAGE_EXP}"
+    docker commit --message "Commit from safe-debugger-action" "${container_id}" "${TMATE_DOCKER_IMAGE_EXP}"
     docker rm -f "${container_id}" > /dev/null
   fi
   tmate -S "${TMATE_SOCK}" kill-server || true
@@ -51,7 +51,7 @@ if [[ -n "$SKIP_DEBUGGER" ]]; then
 fi
 
 if [ -z "${TMATE_ENCRYPT_PASSWORD}" ] && [ -z "${SLACK_WEBHOOK_URL}" ]; then
-  echo "::error::You should set either TMATE_ENCRYPT_PASSWORD or SLACK_WEBHOOK_URL enviroment variables for safety of your secret information, refer to https://github.com/tete103%30/debugger-action/blob/master/README.md" >&2
+  echo "::error::You should set either TMATE_ENCRYPT_PASSWORD or SLACK_WEBHOOK_URL enviroment variables for safety of your secret information, refer to ${README_URL_SHORT}" >&2
   exit 1
 fi
 
@@ -128,7 +128,7 @@ if [ -n "${TMATE_ENCRYPT_PASSWORD}" ]; then
   SSH_ENC_URI="$(uriencode "${SSH_ENC}")"
   WEB_ENC_URI="$(uriencode "${WEB_ENC}")"
   # Shorten this URL to avoid mask by Github Actions Runner
-  ENC_URL="https://tete1030.github.io/debugger-action/?ssh=${SSH_ENC_URI}&web=${WEB_ENC_URI}"
+  ENC_URL="https://tete1030.github.io/safe-debugger-action/?ssh=${SSH_ENC_URI}&web=${WEB_ENC_URI}"
   ENC_URL_SHORT="$(curl -si https://git.io -F "url=${ENC_URL}" | tr -d '\r' | sed -En 's/^Location: (.*)/\1/p')"
 fi
 TIMEOUT_MESSAGE="If you don't connect to this session, it will be *SKIPPED* in ${timeout} seconds at ${kill_date}. To skip this step now, simply connect the ssh and exit."

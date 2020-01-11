@@ -125,7 +125,7 @@ if [ -n "${TMATE_ENCRYPT_PASSWORD}" ]; then
   SSH_ENC_URI="$(uriencode "${SSH_ENC}")"
   WEB_ENC_URI="$(uriencode "${WEB_ENC}")"
 fi
-TIMEOUT_MESSAGE="If you don't connect to this session, it will be *KILLED* in ${timeout} seconds at ${kill_date}. To skip this step, simply connect the ssh and exit."
+TIMEOUT_MESSAGE="If you don't connect to this session, it will be *SKIPPED* in ${timeout} seconds at ${kill_date}. To skip this step now, simply connect the ssh and exit."
 
 if [[ -n "$SLACK_WEBHOOK_URL" ]]; then
   MSG="SSH: ${SSH_LINE}\nWEB: ${WEB_LINE}"
@@ -178,8 +178,8 @@ while [ -S "${TMATE_SOCK}" ]; do
       echo "For detail, refer to https://github.com/tete103%30/debugger-action/blob/master/README.md"
     fi
     [ "x${user_connected}" != "x1" ] && (
-      echo -e "\nIf you don't connect to this session, it will be \e[31mKILLED\e[0m in $(( timeout-timecounter )) seconds at ${kill_date}"
-      echo "To skip this step, simply connect the ssh and exit."
+      echo -e "\nIf you don't connect to this session, it will be \e[31mSKIPPED\e[0m in $(( timeout-timecounter )) seconds at ${kill_date}"
+      echo "To skip this step now, simply connect the ssh and exit."
     )
     echo ______________________________________________________________________________________________
   fi
